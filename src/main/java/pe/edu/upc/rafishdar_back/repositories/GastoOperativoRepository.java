@@ -27,4 +27,16 @@ public interface GastoOperativoRepository extends JpaRepository<GastoOperativo, 
     Double calcularPromedioGastosPorFaena(@Param("usuarioId") Long usuarioId,
                                           @Param("inicio") LocalDateTime inicio,
                                           @Param("fin") LocalDateTime fin);
+
+    // En BitacoraFaenaRepository (aprovechando los JOINs implícitos de JPA)
+// Calcula cuántos Kg de pescado se obtienen por cada galón de combustible invertido en una zona específica.
+    @Query("SELECT SUM(d.volumenKg) / SUM(g.galonesCombustible) " +
+            "FROM BitacoraFaena b " +
+            "JOIN DetalleCaptura d ON d.bitacora.id = b.id " +
+            "JOIN GastoOperativo g ON g.bitacora.id = b.id " +
+            "WHERE b.zona.id = :zonaId " +
+            "AND b.estado = 'Finalizada' " +
+            "AND b.fechaHoraSalida >= :fechaDesde")
+    Double calcularIndiceKgPorGalonEnZona(@Param("zonaId") Long zonaId,
+                                          @Param("fechaDesde") LocalDateTime fechaDesde);
 }
