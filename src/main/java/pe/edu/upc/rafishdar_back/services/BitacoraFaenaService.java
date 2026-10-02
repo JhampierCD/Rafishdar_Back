@@ -2,6 +2,7 @@ package pe.edu.upc.rafishdar_back.services;
 
 import pe.edu.upc.rafishdar_back.entities.BitacoraFaena;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface BitacoraFaenaService {
@@ -13,4 +14,6 @@ public interface BitacoraFaenaService {
     BitacoraFaena terminarBitacora(Long idBitacora, String observaciones);
     BitacoraFaena cambiarEstadoAPlanificada(Long idBitacora, BitacoraFaena request);
     void eliminarBitacoraPlanificada(Long idBitacora);
+    List<BitacoraFaena> listarBitacorasPorUsuarioYEstado(Long usuarioId, String estado);
+    Double obtenerTiempoPromedioFaena(Long idUsuario, LocalDateTime inicio, LocalDateTime fin);
 }
