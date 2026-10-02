@@ -9,8 +9,17 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface BitacoraFaenaRepository extends JpaRepository<BitacoraFaena, Long> {
-    List<BitacoraFaena> findByUsuarioId(Long usuarioId);
-    List<BitacoraFaena> findByUsuarioIdAndEstado(Long usuarioId, String estado);
+    List<BitacoraFaena> findByUserId(Long userId);
+    List<BitacoraFaena> findByUserIdAndEstado(Long userId, String estado);
+
+    @Query("SELECT b FROM BitacoraFaena b " +
+            "WHERE b.zonaPesca.id = :idZona " +
+            "AND b.fechaHoraSalida >= :desde " +
+            "AND (LOWER(CAST(b.observaciones AS string)) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(CAST(b.estado AS string)) LIKE LOWER(CONCAT('%', :keyword, '%'))) ")
+    List<BitacoraFaena> detectarIncidenciasRecientesEnZona(@Param("idZona") Long idZona,
+                                                          @Param("desde") LocalDateTime desde,
+                                                          @Param("keyword") String keyword);
 
     // Calcular el tiempo promedio de faena (en minutos) en un rango de fechas.
     // Usa TIMESTAMPDIFF (específico de MySQL) o la función equivalente de tu BD.
@@ -23,4 +32,14 @@ public interface BitacoraFaenaRepository extends JpaRepository<BitacoraFaena, Lo
     Double calcularTiempoPromedioFaenaMinutos(@Param("usuarioId") Long usuarioId,
                                               @Param("inicio") LocalDateTime inicio,
                                               @Param("fin") LocalDateTime fin);
+
+    // Busca bitácoras recientes en una zona donde los pescadores hayan reportado problemas comunes en texto libre.
+    @Query("SELECT b FROM BitacoraFaena b " +
+            "WHERE b.zona.id = :zonaId " +
+            "AND b.fechaHoraLlegada >= :fechaLimite " +
+            "AND (LOWER(b.observaciones) LIKE '%lobo%' " +
+            "OR LOWER(b.observaciones) LIKE '%red rota%' " +
+            "OR LOWER(b.observaciones) LIKE '%peligro%')")
+    List<BitacoraFaena> detectarIncidenciasRecientesEnZona(@Param("zonaId") Long zonaId,
+                                                           @Param("fechaLimite") LocalDateTime fechaLimite);
 }
