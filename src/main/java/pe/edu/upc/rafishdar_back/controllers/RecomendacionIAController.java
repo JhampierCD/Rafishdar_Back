@@ -12,13 +12,13 @@ import java.util.List;
 
 @RestController
 @CrossOrigin("*")
-@RequestMapping("/recomendacionesIA")
+@RequestMapping("/rafishdar")
 public class RecomendacionIAController {
 
     @Autowired
     private RecomendacionIAService recomendacionIAService;
 
-    //http://localhost:8080/recomendacionesIA/recomendaciones-lista
+    //http://localhost:8080/rafishdar/recomendaciones-lista
     @GetMapping("/recomendaciones")
     public ResponseEntity<List<RecomendacionIA>> listar() {
         List<RecomendacionIA> foundRecomendaciones = recomendacionIAService.listarTodoRecomendaciones();
@@ -28,7 +28,7 @@ public class RecomendacionIAController {
         return new ResponseEntity<>(foundRecomendaciones, HttpStatus.OK);
     }
 
-    //http://localhost:8080/recomendacionesIA/recomendaciones-lista
+    //http://localhost:8080/rafishdar/recomendaciones-ids
     @GetMapping("/recomendaciones/{id}")
     public ResponseEntity<RecomendacionIA> buscarPorId(@PathVariable("id") Long id){
         RecomendacionIA foundRecomendaciones = recomendacionIAService.buscarPorId(id);
@@ -38,7 +38,7 @@ public class RecomendacionIAController {
         return new ResponseEntity<>(foundRecomendaciones, HttpStatus.OK);
     }
 
-    //http://localhost:8080/recomendacionesIA/recomendaciones-insertar
+    //http://localhost:8080/rafishdar/recomendaciones-lista
     @PostMapping("/recomendaciones")
     public ResponseEntity<RecomendacionIA> insertar(@RequestBody RecomendacionIA recomendacionIA){
         RecomendacionIA newRecomendacionIA = recomendacionIAService.insertarRecomendaciones(recomendacionIA);
@@ -50,7 +50,7 @@ public class RecomendacionIAController {
         return new ResponseEntity<>(newRecomendacionIA, HttpStatus.CREATED);
     }
 
-    //http://localhost:8080/recomendacionesIA/recomendaciones-eliminar
+    //http://localhost:8080/rafishdar/recomendaciones-ids
     @DeleteMapping("/recomendaciones/{id}")
     public ResponseEntity<HttpStatus> eliminar(@PathVariable("id") Long id){
         if(!recomendacionIAService.eliminarRecomendaciones(id)) {
@@ -59,7 +59,7 @@ public class RecomendacionIAController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    //http://localhost:8080/recomendacionesIA/recomendaciones-actualizar
+    //http://localhost:8080/rafishdar/recomendaciones-ids
     @PutMapping("/eventos")
     public ResponseEntity<RecomendacionIA> actualizar(@RequestBody RecomendacionIA recomendacionIA){
         if(recomendacionIAService.actualizarRecomendaciones(recomendacionIA)==null) {

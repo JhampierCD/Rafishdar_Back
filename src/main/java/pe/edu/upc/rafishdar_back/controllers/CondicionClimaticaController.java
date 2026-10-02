@@ -12,12 +12,12 @@ import java.util.List;
 
 @RestController
 @CrossOrigin("*")
-@RequestMapping("/condiciones-climaticas")
+@RequestMapping("/rafishdar")
 public class CondicionClimaticaController {
     @Autowired
     private CondicionClimaticaService condicionClimaticaService;
 
-    //http://localhost:8080/condiciones-climaticas/condiciones-lista
+    //http://localhost:8080/rafishdar/condiciones-climaticas-lista
     @GetMapping("/condiciones")
     public ResponseEntity<List<CondicionClimatica>> listar() {
         List<CondicionClimatica> foundCondiciones = condicionClimaticaService.listarTodoCondiciones();
@@ -27,7 +27,7 @@ public class CondicionClimaticaController {
         return new ResponseEntity<>(foundCondiciones, HttpStatus.OK);
     }
 
-    //http://localhost:8080/condiciones-climaticas/condiciones-lista
+    //http://localhost:8080/rafishdar/condiciones-ids
     @GetMapping("/condiciones/{id}")
     public ResponseEntity<CondicionClimatica> buscarPorId(@PathVariable("id") Long id){
         CondicionClimatica foundCondicion = condicionClimaticaService.buscarPorId(id);
@@ -37,7 +37,7 @@ public class CondicionClimaticaController {
         return new ResponseEntity<>(foundCondicion, HttpStatus.OK);
     }
 
-    //http://localhost:8080/condiciones-climaticas/condiciones-insertar
+    //http://localhost:8080/rafishdar/condiciones-climaticas-lista
     @PostMapping("/condiciones")
     public ResponseEntity<CondicionClimatica> insertar(@RequestBody CondicionClimatica condicionClimatica){
         CondicionClimatica newCondicionClimatica = condicionClimaticaService.insertarCondiciones(condicionClimatica);
@@ -49,7 +49,7 @@ public class CondicionClimaticaController {
         return new ResponseEntity<>(newCondicionClimatica, HttpStatus.CREATED);
     }
 
-    //http://localhost:8080/condiciones-climaticas/condiciones-eliminar
+    //http://localhost:8080/rafishdar/condiciones-ids
     @DeleteMapping("/eventos/{id}")
     public ResponseEntity<HttpStatus> eliminar(@PathVariable("id") Long id){
         if(!condicionClimaticaService.eliminarCondiciones(id)) {
@@ -58,7 +58,7 @@ public class CondicionClimaticaController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    //http://localhost:8080/condiciones-climaticas/condiciones-actualizar
+    //http://localhost:8080/rafishdar/condiciones-ids
     @PutMapping("/eventos")
     public ResponseEntity<CondicionClimatica> actualizar(@RequestBody CondicionClimatica condicionClimatica){
         if(condicionClimaticaService.actualizarCondiciones(condicionClimatica)==null) {
