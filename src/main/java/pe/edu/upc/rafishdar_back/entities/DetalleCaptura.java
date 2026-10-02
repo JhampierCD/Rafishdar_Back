@@ -1,5 +1,6 @@
 package pe.edu.upc.rafishdar_back.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -20,6 +21,7 @@ public class DetalleCaptura {
     private Double volumenKg;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "bitacora_id")
     private BitacoraFaena bitacora;
 
