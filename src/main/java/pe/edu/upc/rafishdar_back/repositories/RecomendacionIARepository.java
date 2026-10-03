@@ -1,4 +1,7 @@
 package pe.edu.upc.rafishdar_back.repositories;
 
-public interface RecomendacionIARepository {
+import org.springframework.data.jpa.repository.JpaRepository;
+import pe.edu.upc.rafishdar_back.entities.RecomendacionIA;
+
+public interface RecomendacionIARepository extends JpaRepository<RecomendacionIA, Long> {
 }
