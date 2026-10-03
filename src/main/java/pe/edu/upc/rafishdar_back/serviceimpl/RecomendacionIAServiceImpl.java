@@ -14,7 +14,7 @@ public class RecomendacionIAServiceImpl implements RecomendacionIAService {
     private RecomendacionIARepository recomendacionIARepository;
 
     @Override
-    public List<RecomendacionIA> listarTodo() {
+    public List<RecomendacionIA> listarTodoRecomendaciones() {
         return recomendacionIARepository.findAll();
     }
 
