@@ -13,7 +13,8 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 
-public class ZonaPesca {
+public class
+ZonaPesca {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
