@@ -111,7 +111,7 @@ public class DetalleCapturaServiceImpl implements DetalleCapturaService {
         Double volumenVeda = capturaRepository.calcularVolumenCapturaEnVeda(idBitacora);
         if (volumenVeda == null || volumenVeda == 0.0) return 0.0;
 
-        // Calculamos el volumen total de esa misma faena (reutilizando método o lógica directa)
+        // Calculamos el volumen total de esa misma faena (reutilizando metodo o logica directa)
         List<DetalleCaptura> capturas = listarCapturasPorBitacora(idBitacora);
         Double volumenTotal = capturas.stream().mapToDouble(DetalleCaptura::getVolumenKg).sum();
 

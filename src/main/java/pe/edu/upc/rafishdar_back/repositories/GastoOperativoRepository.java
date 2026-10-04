@@ -6,9 +6,10 @@ import org.springframework.data.repository.query.Param;
 import pe.edu.upc.rafishdar_back.entities.GastoOperativo;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 public interface GastoOperativoRepository extends JpaRepository<GastoOperativo, Long> {
-    GastoOperativo findByBitacoraId(Long idBitacora);
+    Optional<GastoOperativo> findByBitacoraId(Long idBitacora);
 
     // Calcular la suma total de gastos (combustible + insumos) en un rango de fechas
     @Query("SELECT SUM(g.costoCombustible + g.costoHieloInsumos) " +
