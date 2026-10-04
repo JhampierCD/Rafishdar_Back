@@ -1,6 +1,7 @@
 package pe.edu.upc.rafishdar_back.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import pe.edu.upc.rafishdar_back.entities.BitacoraFaena;
@@ -42,4 +43,10 @@ public interface BitacoraFaenaRepository extends JpaRepository<BitacoraFaena, Lo
             "OR LOWER(b.observaciones) LIKE '%peligro%')")
     List<BitacoraFaena> detectarIncidenciasRecientesEnZona(@Param("zonaId") Long zonaId,
                                                            @Param("fechaLimite") LocalDateTime fechaLimite);
+
+    @Modifying
+    @Query("UPDATE BitacoraFaena b SET b.estado = 'Cancelada'" +
+            "WHERE b.estado = 'Planificada'" +
+            "AND b.fechaHoraSalida < :fechaLimite")
+    int cancelarFaenasExpiradas(@Param("fechaLimite") LocalDateTime fechaLimite);
 }

@@ -6,8 +6,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.rafishdar_back.entities.BitacoraFaena;
-import pe.edu.upc.rafishdar_back.dtos.BitacoraFaenaRequestDTO;
-import pe.edu.upc.rafishdar_back.dtos.BitacoraFaenaUpdateDTO;
 import pe.edu.upc.rafishdar_back.services.BitacoraFaenaService;
 
 import java.time.LocalDateTime;
@@ -23,7 +21,7 @@ public class BitacoraFaenaController {
 
     // http://localhost:8080/bitacoras
     @PostMapping
-    public ResponseEntity<BitacoraFaena> insertarBitacora(@RequestBody BitacoraFaenaRequestDTO request) {
+    public ResponseEntity<BitacoraFaena> insertarBitacora(@RequestBody BitacoraFaena request) {
         BitacoraFaena newBitacora = bitacoraService.insertarBitacora(request);
         return new ResponseEntity<>(newBitacora, HttpStatus.CREATED);
     }
@@ -57,6 +55,13 @@ public class BitacoraFaenaController {
         return new ResponseEntity<>(foundBitacoras, HttpStatus.OK);
     }
 
+    // http://localhost:8080/api/bitacoras/1/revertir-planificada
+    @PutMapping("/{id}/revertir-planificada")
+    public ResponseEntity<BitacoraFaena> actualizarEstadoPlanificada(@PathVariable("id") Long id) {
+        BitacoraFaena updatedBitacora = bitacoraService.cambiarEstadoAPlanificada(id);
+        return new ResponseEntity<>(updatedBitacora, HttpStatus.OK);
+    }
+
     // http://localhost:8080/bitacoras/1/estado/en-curso
     @PutMapping("/{id}/estado/en-curso")
     public ResponseEntity<BitacoraFaena> actualizarEstadoEnCurso(@PathVariable("id") Long id) {
@@ -64,13 +69,23 @@ public class BitacoraFaenaController {
         return new ResponseEntity<>(updatedBitacora, HttpStatus.OK);
     }
 
-    // http://localhost:8080/bitacoras/1/coordenadas?latitud=-12.04&longitud=-77.03
-    @PutMapping("/{id}/coordenadas")
-    public ResponseEntity<BitacoraFaena> actualizarCoordenadas(
+    // http://localhost:8080/api/bitacoras/1/planificada
+    @PutMapping("/{id}/planificada")
+    public ResponseEntity<BitacoraFaena> actualizarPlanificada(
             @PathVariable("id") Long id,
-            @RequestParam Double latitud,
-            @RequestParam Double longitud) {
-        BitacoraFaena updatedBitacora = bitacoraService.cambiarCoordenadas(id, latitud, longitud);
+            @RequestBody BitacoraFaena bitacora) {
+
+        BitacoraFaena updatedBitacora = bitacoraService.actualizarPlanificada(id, bitacora);
+        return new ResponseEntity<>(updatedBitacora, HttpStatus.OK);
+    }
+
+    // http://localhost:8080/api/bitacoras/1/en-curso
+    @PutMapping("/{id}/en-curso")
+    public ResponseEntity<BitacoraFaena> actualizarEnCurso(
+            @PathVariable("id") Long id,
+            @RequestBody BitacoraFaena bitacora) {
+
+        BitacoraFaena updatedBitacora = bitacoraService.actualizarEnCurso(id, bitacora);
         return new ResponseEntity<>(updatedBitacora, HttpStatus.OK);
     }
 
@@ -80,15 +95,6 @@ public class BitacoraFaenaController {
             @PathVariable("id") Long id,
             @RequestParam String observaciones) {
         BitacoraFaena updatedBitacora = bitacoraService.terminarBitacora(id, observaciones);
-        return new ResponseEntity<>(updatedBitacora, HttpStatus.OK);
-    }
-
-    // http://localhost:8080/bitacoras/1
-    @PutMapping("/{id}")
-    public ResponseEntity<BitacoraFaena> actualizarPlanificada(
-            @PathVariable("id") Long id,
-            @RequestBody BitacoraFaenaUpdateDTO request) {
-        BitacoraFaena updatedBitacora = bitacoraService.cambiarEstadoAPlanificada(id, request);
         return new ResponseEntity<>(updatedBitacora, HttpStatus.OK);
     }
 
@@ -108,6 +114,13 @@ public class BitacoraFaenaController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fin) {
         Double promedio = bitacoraService.obtenerTiempoPromedioFaena(idUsuario, inicio, fin);
         return new ResponseEntity<>(promedio, HttpStatus.OK);
+    }
+
+    // http://localhost:8080/api/bitacoras/1/alerta-desvio
+    @GetMapping("/{id}/alerta-desvio")
+    public ResponseEntity<Boolean> verificarDesvio(@PathVariable("id") Long id) {
+        boolean hayDesvio = bitacoraService.verificarDesvioDeZona(id);
+        return new ResponseEntity<>(hayDesvio, HttpStatus.OK);
     }
 
     @GetMapping("/zona/{idZona}/alerta-incidencias")
