@@ -37,9 +37,9 @@ public class UserController {
 
     // http://localhost:8080/rafishdar/usuarios/1
     @GetMapping("/usuarios/{id}")
-    public ResponseEntity<UserDTO> buscarPorId(@PathVariable("id") Long id) {
+    public ResponseEntity<UserDTO> buscarPorIdDTO(@PathVariable("id") Long id) {
 
-        UserDTO foundUser = userService.buscarPorId(id);
+        UserDTO foundUser = userService.buscarPorIdDTO(id);
 
         if (foundUser == null) {
             return new ResponseEntity<>(

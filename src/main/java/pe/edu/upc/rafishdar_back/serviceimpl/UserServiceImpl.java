@@ -29,7 +29,7 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
-    public UserDTO buscarPorId(Long id) {
+    public UserDTO buscarPorIdDTO(Long id) {
 
         if (id == null) {
             return null;
@@ -44,6 +44,11 @@ public class UserServiceImpl implements UserService {
         }
 
         return convertirDTO(user);
+    }
+
+    @Override
+    public User buscarPorId(Long id) {
+        return userRepository.findById(id).orElse(null);
     }
 
 
