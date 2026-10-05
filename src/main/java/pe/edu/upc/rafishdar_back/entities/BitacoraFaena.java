@@ -40,7 +40,7 @@ public class BitacoraFaena {
     @JoinColumn(name = "zona_pesca_id")
     private ZonaPesca zonaPesca;
 
-    @OneToMany(mappedBy = "bitacora")
+    @OneToMany(mappedBy = "bitacora", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private List<DetalleCaptura> detallesCaptura;
 
     @OneToOne(mappedBy = "bitacora")
