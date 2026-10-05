@@ -26,10 +26,6 @@ public class User {
     @OneToMany(mappedBy = "usuario")
     private List<Embarcacion> embarcaciones;
 
-
     @OneToMany(mappedBy = "usuario")
     private List<BitacoraFaena> bitacoras;
-
-    @OneToMany(mappedBy = "usuario")
-    private List<Auditoria> auditorias;
 }

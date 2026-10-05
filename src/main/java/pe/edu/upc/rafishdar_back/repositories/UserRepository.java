@@ -1,4 +1,9 @@
 package pe.edu.upc.rafishdar_back.repositories;
 
-public interface UserRepository {
+import org.springframework.data.jpa.repository.JpaRepository;
+import pe.edu.upc.rafishdar_back.entities.User;
+
+public interface UserRepository extends JpaRepository<User, Long> {
+    User findByCorreoIgnoreCase(String correo);
+    boolean existsByCorreoIgnoreCase(String correo);
 }

@@ -4,16 +4,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class TemporadaDTO {
-
+public class UserActualizarDTO {
     private Long id;
-    private String nombreTemporada;
-    private LocalDate fechaInicio;
-    private LocalDate fechaFin;
-
+    private String nombres;
+    private String apellidos;
+    private String correo;
 }
