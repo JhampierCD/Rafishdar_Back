@@ -10,26 +10,20 @@ import lombok.ToString;
 import java.util.List;
 
 @Entity
-@Table(name = "embarcaciones")
+@Table(name = "authorities")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+public class Authority {
 
-public class Embarcacion {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String nombre;
-    private String matricula;
-    private Double capacidadToneladas;
-    @ToString.Exclude
-    @JsonIgnore
-    @ManyToOne
-    @JoinColumn(name = "usuario_id")
-    private User usuario;
+    private String name;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "embarcacion")
-    private List<BitacoraFaena> bitacoras;
+    @ToString.Exclude
+    @ManyToMany(mappedBy = "authorities")
+    private List<User> users;
 }

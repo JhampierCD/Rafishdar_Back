@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface BitacoraFaenaRepository extends JpaRepository<BitacoraFaena, Long> {
-    List<BitacoraFaena> findByUserId(Long userId);
-    List<BitacoraFaena> findByUserIdAndEstado(Long userId, String estado);
+    List<BitacoraFaena> findByUsuarioId(Long userId);
+    List<BitacoraFaena> findByUsuarioIdAndEstado(Long userId, String estado);
 
     @Query("SELECT b FROM BitacoraFaena b " +
             "WHERE b.zonaPesca.id = :idZona " +
@@ -36,7 +36,7 @@ public interface BitacoraFaenaRepository extends JpaRepository<BitacoraFaena, Lo
 
     // Busca bitácoras recientes en una zona donde los pescadores hayan reportado problemas comunes en texto libre.
     @Query("SELECT b FROM BitacoraFaena b " +
-            "WHERE b.zona.id = :zonaId " +
+            "WHERE b.zonaPesca.id = :zonaId " +
             "AND b.fechaHoraLlegada >= :fechaLimite " +
             "AND (LOWER(b.observaciones) LIKE '%lobo%' " +
             "OR LOWER(b.observaciones) LIKE '%red rota%' " +

@@ -11,49 +11,99 @@ import java.util.List;
 
 @RestController
 @CrossOrigin("*")
-@RequestMapping("/embarcaciones")
+@RequestMapping("/rafishdar")
 public class EmbarcacionController {
+
     @Autowired
     EmbarcacionService embarcacionService;
 
-    @GetMapping("/listar")
-    public ResponseEntity<List<Embarcacion>> listarEmbarcacion(){
-        List<Embarcacion> foundEmbarcaciones = embarcacionService.listarEmbarcaciones();
-        if (foundEmbarcaciones.isEmpty()){
-            return new ResponseEntity<>(foundEmbarcaciones, HttpStatus.NO_CONTENT);
+    @GetMapping("/embarcaciones")
+    public ResponseEntity<List<Embarcacion>> listarEmbarcacion() {
+
+        List<Embarcacion> foundEmbarcaciones =
+                embarcacionService.listarEmbarcaciones();
+
+        if (foundEmbarcaciones.isEmpty()) {
+            return new ResponseEntity<>(
+                    foundEmbarcaciones,
+                    HttpStatus.NO_CONTENT
+            );
         }
-        return new ResponseEntity<>(foundEmbarcaciones, HttpStatus.OK);
+
+        return new ResponseEntity<>(
+                foundEmbarcaciones,
+                HttpStatus.OK
+        );
     }
 
-    @GetMapping("/buscar/{id}")
-    public ResponseEntity<Embarcacion> buscarporId(@PathVariable("id") Long id){
-        Embarcacion foundEmbarcacion = embarcacionService.buscarPorId(id);
-        if (foundEmbarcacion == null){
-            return new ResponseEntity<>(foundEmbarcacion, HttpStatus.NOT_FOUND);
+    @GetMapping("/embarcaciones/{id}")
+    public ResponseEntity<Embarcacion> buscarporId(
+            @PathVariable("id") Long id) {
+
+        Embarcacion foundEmbarcacion =
+                embarcacionService.buscarPorId(id);
+
+        if (foundEmbarcacion == null) {
+            return new ResponseEntity<>(
+                    foundEmbarcacion,
+                    HttpStatus.NOT_FOUND
+            );
         }
-        return new ResponseEntity<>(foundEmbarcacion, HttpStatus.OK);
+
+        return new ResponseEntity<>(
+                foundEmbarcacion,
+                HttpStatus.OK
+        );
     }
 
-    @PostMapping("/insertarembarcacion")
-    public ResponseEntity<Embarcacion> insertar(@RequestBody Embarcacion embarcacion){
-        Embarcacion newEmbarcacion = embarcacionService.insertar(embarcacion);
-        if (newEmbarcacion == null){
-            return new ResponseEntity<>(newEmbarcacion, HttpStatus.NOT_ACCEPTABLE);
+    @PostMapping("/embarcaciones")
+    public ResponseEntity<Embarcacion> insertar(
+            @RequestBody Embarcacion embarcacion) {
+
+        Embarcacion newEmbarcacion =
+                embarcacionService.insertar(embarcacion);
+
+        if (newEmbarcacion == null) {
+            return new ResponseEntity<>(
+                    newEmbarcacion,
+                    HttpStatus.NOT_ACCEPTABLE
+            );
         }
-        return new ResponseEntity<>(newEmbarcacion, HttpStatus.CREATED);
+
+        return new ResponseEntity<>(
+                newEmbarcacion,
+                HttpStatus.CREATED
+        );
     }
-    @DeleteMapping("/eliminarembarcacion")
-    public ResponseEntity<HttpStatus> eliminar(@PathVariable("id") Long id){
-        if (!embarcacionService.eliminar(id)){
-            return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE);
+
+    @DeleteMapping("/embarcaciones/{id}")
+    public ResponseEntity<HttpStatus> eliminar(
+            @PathVariable("id") Long id) {
+
+        if (!embarcacionService.eliminar(id)) {
+            return new ResponseEntity<>(
+                    HttpStatus.NOT_ACCEPTABLE
+            );
         }
-        return new ResponseEntity<>(HttpStatus.OK);
+
+        return new ResponseEntity<>(
+                HttpStatus.OK
+        );
     }
-    @PutMapping("/actualizarembarcacion")
-    public ResponseEntity<Embarcacion> actualizar(@RequestBody Embarcacion embarcacion){
-        if( embarcacionService.actualizar(embarcacion) == null){
-            return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE);
+
+    @PutMapping("/embarcaciones")
+    public ResponseEntity<Embarcacion> actualizar(
+            @RequestBody Embarcacion embarcacion) {
+
+        if (embarcacionService.actualizar(embarcacion) == null) {
+            return new ResponseEntity<>(
+                    HttpStatus.NOT_ACCEPTABLE
+            );
         }
-        return new ResponseEntity<>(embarcacion, HttpStatus.OK);
+
+        return new ResponseEntity<>(
+                embarcacion,
+                HttpStatus.OK
+        );
     }
 }
