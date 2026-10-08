@@ -20,6 +20,7 @@ public class EspeciePez {
     private Long id;
 
     private String nombreComun;
+    private String nombreCientifico;
     private Boolean estadoVeda;
 
     @OneToMany(mappedBy = "especie")

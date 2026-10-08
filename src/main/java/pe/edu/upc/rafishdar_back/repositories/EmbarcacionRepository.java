@@ -4,4 +4,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import pe.edu.upc.rafishdar_back.entities.Embarcacion;
 
 public interface EmbarcacionRepository extends JpaRepository<Embarcacion, Long> {
+    Embarcacion findEmbarcacionByMatriculaAndNombre(String matricula, String nombre);
 }
