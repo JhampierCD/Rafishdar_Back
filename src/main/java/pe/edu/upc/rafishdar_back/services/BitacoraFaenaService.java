@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface BitacoraFaenaService {
+    List<BitacoraFaena> listarTodo();
     BitacoraFaena insertarBitacora(BitacoraFaena bitacoraFaena);
     BitacoraFaena buscarBitacoraPorId(Long id);
     List<BitacoraFaena> listarBitacorasPorUsuarioId(Long usuarioId);

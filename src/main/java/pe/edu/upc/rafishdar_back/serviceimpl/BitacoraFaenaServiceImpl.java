@@ -37,6 +37,11 @@ public class BitacoraFaenaServiceImpl implements BitacoraFaenaService {
 
     // --- MÉTODOS BASE (CRUD) ---
 
+    @Override
+    public List<BitacoraFaena> listarTodo() {
+        return bitacoraRepository.findAll();
+    }
+
     public BitacoraFaena insertarBitacora(BitacoraFaena request) {
         User usuario = userRepository.findById(request.getUsuario().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
@@ -65,7 +70,7 @@ public class BitacoraFaenaServiceImpl implements BitacoraFaenaService {
     }
 
     public List<BitacoraFaena> listarBitacorasPorUsuarioId(Long idUsuario) {
-        return bitacoraRepository.findByUserId(idUsuario);
+        return bitacoraRepository.findByUsuarioId(idUsuario);
     }
 
     public BitacoraFaena cambiarEstadoAEnCurso(Long idBitacora) {
@@ -175,7 +180,7 @@ public class BitacoraFaenaServiceImpl implements BitacoraFaenaService {
     // --- MÉTODOS ANALÍTICOS ---
 
     public List<BitacoraFaena> listarBitacorasPorUsuarioYEstado(Long idUsuario, String estado) {
-        return bitacoraRepository.findByUserIdAndEstado(idUsuario, estado);
+        return bitacoraRepository.findByUsuarioIdAndEstado(idUsuario, estado);
     }
 
     public Double obtenerTiempoPromedioFaena(Long idUsuario, LocalDateTime inicio, LocalDateTime fin) {

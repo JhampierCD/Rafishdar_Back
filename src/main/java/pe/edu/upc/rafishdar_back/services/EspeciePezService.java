@@ -18,4 +18,6 @@ public interface EspeciePezService {
 
     List<EspeciePezDTO> listarPorEstadoVeda(Boolean estadoVeda);
 
+    List<EspeciePezDTO> buscarPorNombreComun(String nombreComun);
+
 }

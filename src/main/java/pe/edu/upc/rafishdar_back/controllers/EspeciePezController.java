@@ -142,4 +142,18 @@ public class EspeciePezController {
         );
     }
 
+    @GetMapping("/especies/buscar")
+    public ResponseEntity<List<EspeciePezDTO>> buscarPorNombreComun(
+            @RequestParam("nombreComun") String nombreComun) {
+        if (nombreComun.isBlank()) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        List<EspeciePezDTO> especies = especiePezService.buscarPorNombreComun(nombreComun);
+        if (especies.isEmpty()) {
+            return new ResponseEntity<>(especies, HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<>(especies, HttpStatus.OK);
+    }
+
 }

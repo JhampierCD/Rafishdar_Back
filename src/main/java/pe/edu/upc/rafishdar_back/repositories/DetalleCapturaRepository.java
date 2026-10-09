@@ -35,11 +35,11 @@ public interface DetalleCapturaRepository extends JpaRepository<DetalleCaptura, 
 
     // Retorna una lista de zonas y su volumen total, ordenada de mayor a menor captura para una especie en un mes específico.
 // Se usa Pageable (ej. PageRequest.of(0, 3)) para obtener solo el "Top 3" de zonas.
-    @Query("SELECT b.zona.id, SUM(d.volumenKg) AS totalKg " +
+    @Query("SELECT b.zonaPesca.id, SUM(d.volumenKg) AS totalKg " +
             "FROM DetalleCaptura d JOIN d.bitacora b " +
             "WHERE d.especie.id = :especieId " +
             "AND MONTH(b.fechaHoraSalida) = :mes " +
-            "GROUP BY b.zona.id " +
+            "GROUP BY b.zonaPesca.id " +
             "ORDER BY totalKg DESC")
     List<Object[]> encontrarMejoresZonasPorEspecieYMes(@Param("especieId") Long especieId,
                                                        @Param("mes") int mes,

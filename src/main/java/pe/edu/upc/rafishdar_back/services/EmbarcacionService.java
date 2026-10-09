@@ -10,4 +10,6 @@ public interface EmbarcacionService {
    public Embarcacion insertar(Embarcacion embarcacion);
    public Embarcacion actualizar(Embarcacion embarcacion);
    public Boolean eliminar(Long id);
+   List<Embarcacion> listarPorUsuario(Long usuarioId);
+   boolean existeMatricula(String matricula);
 }

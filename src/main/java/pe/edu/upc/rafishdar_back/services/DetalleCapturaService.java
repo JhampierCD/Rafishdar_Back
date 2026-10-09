@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface DetalleCapturaService {
+    List<DetalleCaptura> listarTodo();
     DetalleCaptura insertarCaptura(Long idBitacora, DetalleCapturaRequestDTO request);
     DetalleCaptura actualizarCaptura(Long idDetalle, Double nuevoVolumen);
     void eliminarCaptura(Long idDetalle);

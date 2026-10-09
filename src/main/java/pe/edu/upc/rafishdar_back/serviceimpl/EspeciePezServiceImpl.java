@@ -173,6 +173,17 @@ public class EspeciePezServiceImpl implements EspeciePezService {
         return convertirLista(especies);
     }
 
+    @Override
+    public List<EspeciePezDTO> buscarPorNombreComun(String nombreComun) {
+        if (nombreComun == null || nombreComun.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return convertirLista(
+                especiePezRepository.buscarPorNombreComun(nombreComun.trim())
+        );
+    }
+
 
     private boolean datosValidos(
             EspeciePezDTO especiePezDTO) {

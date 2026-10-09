@@ -10,6 +10,7 @@ import java.util.Optional;
 
 public interface GastoOperativoRepository extends JpaRepository<GastoOperativo, Long> {
     Optional<GastoOperativo> findByBitacoraId(Long idBitacora);
+    void deleteByBitacoraId(Long idBitacora);
 
     // Calcular la suma total de gastos (combustible + insumos) en un rango de fechas
     @Query("SELECT SUM(g.costoCombustible + g.costoHieloInsumos) " +
@@ -35,7 +36,7 @@ public interface GastoOperativoRepository extends JpaRepository<GastoOperativo, 
             "FROM BitacoraFaena b " +
             "JOIN DetalleCaptura d ON d.bitacora.id = b.id " +
             "JOIN GastoOperativo g ON g.bitacora.id = b.id " +
-            "WHERE b.zona.id = :zonaId " +
+            "WHERE b.zonaPesca.id = :zonaId " +
             "AND b.estado = 'Finalizada' " +
             "AND b.fechaHoraSalida >= :fechaDesde")
     Double calcularIndiceKgPorGalonEnZona(@Param("zonaId") Long zonaId,

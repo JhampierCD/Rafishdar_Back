@@ -51,6 +51,14 @@ public class TemporadaServiceImpl implements TemporadaService {
             return null;
         }
 
+        if (haySuperposicion(
+                temporadaDTO.getFechaInicio(),
+                temporadaDTO.getFechaFin(),
+                null
+        )) {
+            return null;
+        }
+
         Temporada temporada = new Temporada();
 
         temporada.setNombreTemporada(
@@ -93,6 +101,14 @@ public class TemporadaServiceImpl implements TemporadaService {
                         .orElse(null);
 
         if (temporada == null) {
+            return null;
+        }
+
+        if (haySuperposicion(
+                temporadaDTO.getFechaInicio(),
+                temporadaDTO.getFechaFin(),
+                temporada.getId()
+        )) {
             return null;
         }
 
@@ -141,16 +157,22 @@ public class TemporadaServiceImpl implements TemporadaService {
     @Override
     public List<TemporadaDTO> listarVigentes() {
 
-        LocalDate fechaActual = LocalDate.now();
-
         List<Temporada> temporadas =
                 temporadaRepository
-                        .findByFechaInicioLessThanEqualAndFechaFinGreaterThanEqual(
-                                fechaActual,
-                                fechaActual
-                        );
+                        .findTemporadasVigentes();
 
         return convertirLista(temporadas);
+    }
+
+    @Override
+    public List<TemporadaDTO> buscarSuperpuestas(LocalDate inicio, LocalDate fin) {
+        if (inicio == null || fin == null || inicio.isAfter(fin)) {
+            return new ArrayList<>();
+        }
+
+        return convertirLista(
+                temporadaRepository.findTemporadasSuperpuestas(inicio, fin)
+        );
     }
 
 
@@ -188,6 +210,17 @@ public class TemporadaServiceImpl implements TemporadaService {
         }
 
         return true;
+    }
+
+    private boolean haySuperposicion(
+            LocalDate inicio,
+            LocalDate fin,
+            Long temporadaExcluidaId) {
+        return temporadaRepository.findTemporadasSuperpuestas(inicio, fin)
+                .stream()
+                .anyMatch(temporada ->
+                        !temporada.getId().equals(temporadaExcluidaId)
+                );
     }
 
 

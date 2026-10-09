@@ -1,5 +1,6 @@
 package pe.edu.upc.rafishdar_back.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -40,6 +41,7 @@ public class BitacoraFaena {
     @JoinColumn(name = "zona_pesca_id")
     private ZonaPesca zonaPesca;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "bitacora", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private List<DetalleCaptura> detallesCaptura;
 
@@ -47,9 +49,11 @@ public class BitacoraFaena {
     private GastoOperativo gastoOperativo;
 
     @OneToOne(mappedBy = "bitacora")
+    @JsonIgnore
     private CondicionClimatica condicionClimatica;
 
     @OneToOne(mappedBy = "bitacora")
+    @JsonIgnore
     private RecomendacionIA recomendacionIA;
 
 }
