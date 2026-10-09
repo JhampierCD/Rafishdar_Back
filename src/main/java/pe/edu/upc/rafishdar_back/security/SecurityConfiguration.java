@@ -294,7 +294,17 @@ public class SecurityConfiguration {
                                 )
 
                                 .requestMatchers(
-                                        "/rafishdar/condiciones/**"
+                                        HttpMethod.GET,
+                                        "/rafishdar/condiciones-climaticas/promedio-temperatura",
+                                        "/rafishdar/condiciones-climaticas/peligrosas"
+                                )
+                                .hasAnyAuthority(
+                                        "ADMIN",
+                                        "PESCADOR"
+                                )
+
+                                .requestMatchers(
+                                        "/rafishdar/condiciones-climaticas/**"
                                 )
                                 .hasAnyAuthority(
                                         "ADMIN",
@@ -329,7 +339,7 @@ public class SecurityConfiguration {
                                  */
 
                                 .requestMatchers(
-                                        "/rafishdar/recomendaciones/**"
+                                        "/rafishdar/recomendaciones-ia/**"
                                 )
                                 .hasAnyAuthority(
                                         "ADMIN",
@@ -337,7 +347,7 @@ public class SecurityConfiguration {
                                 )
 
                                 .requestMatchers(
-                                        "/rafishdar/bitacoras/*/recomendacion"
+                                        "/rafishdar/bitacoras/*/recomendacion-ia"
                                 )
                                 .hasAnyAuthority(
                                         "ADMIN",

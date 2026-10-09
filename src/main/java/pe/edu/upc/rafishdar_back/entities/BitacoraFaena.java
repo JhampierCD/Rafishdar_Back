@@ -46,6 +46,7 @@ public class BitacoraFaena {
     private List<DetalleCaptura> detallesCaptura;
 
     @OneToOne(mappedBy = "bitacora")
+    @JsonIgnore
     private GastoOperativo gastoOperativo;
 
     @OneToOne(mappedBy = "bitacora")
