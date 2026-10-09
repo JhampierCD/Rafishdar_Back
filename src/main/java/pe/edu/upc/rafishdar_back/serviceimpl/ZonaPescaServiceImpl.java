@@ -70,4 +70,20 @@ public class ZonaPescaServiceImpl implements ZonaPescaService {
         zonaPescaRepository.deleteById(id);
         return true;
     }
+
+    @Override
+    public List<ZonaPesca> listarTop3Historicas(Long especieId, int mes) {
+        if (especieId == null || mes < 1 || mes > 12) {
+            return List.of();
+        }
+        return zonaPescaRepository.findTop3ZonasByEspecieAndMesHistorico(especieId, mes);
+    }
+
+    @Override
+    public List<ZonaPesca> listarCercanasACosta(Double distanciaMaxima) {
+        if (distanciaMaxima == null || distanciaMaxima < 0) {
+            return List.of();
+        }
+        return zonaPescaRepository.findZonasCercanasACosta(distanciaMaxima);
+    }
 }

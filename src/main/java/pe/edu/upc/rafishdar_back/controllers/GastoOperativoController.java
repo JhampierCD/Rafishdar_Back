@@ -10,6 +10,7 @@ import pe.edu.upc.rafishdar_back.dtos.GastoOperativoRequestDTO;
 import pe.edu.upc.rafishdar_back.services.GastoOperativoService;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @CrossOrigin("*")
@@ -18,6 +19,15 @@ public class GastoOperativoController {
 
     @Autowired
     private GastoOperativoService gastoService;
+
+    @GetMapping("/gastos-operativos")
+    public ResponseEntity<List<GastoOperativo>> listarTodo() {
+        List<GastoOperativo> gastos = gastoService.listarTodo();
+        if (gastos.isEmpty()) {
+            return new ResponseEntity<>(gastos, HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<>(gastos, HttpStatus.OK);
+    }
 
     @PostMapping("/gastos-operativos/bitacoras/{idBitacora}/gasto")
     public ResponseEntity<GastoOperativo> insertar(
@@ -70,6 +80,13 @@ public class GastoOperativoController {
                 foundGasto,
                 HttpStatus.OK
         );
+    }
+
+    @DeleteMapping("/gastos-operativos/bitacoras/{idBitacora}/gasto")
+    public ResponseEntity<Void> eliminar(
+            @PathVariable("idBitacora") Long idBitacora) {
+        gastoService.eliminar(idBitacora);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @GetMapping(

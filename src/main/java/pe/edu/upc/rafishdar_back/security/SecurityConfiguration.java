@@ -24,8 +24,8 @@ public class SecurityConfiguration {
             "/swagger-ui/**",
             "/swagger-resources/**",
 
-            "/rafishdar/usuarios/login/**",
-            "/rafishdar/usuarios/register/**"
+            "/rafishdar/users/login/**",
+            "/rafishdar/users/register/**"
     };
 
 
@@ -91,19 +91,37 @@ public class SecurityConfiguration {
 
                                 .requestMatchers(
                                         HttpMethod.PUT,
-                                        "/rafishdar/usuarios/password"
+                                        "/rafishdar/users/password"
                                 )
                                 .authenticated()
 
                                 .requestMatchers(
                                         HttpMethod.GET,
-                                        "/rafishdar/usuarios/**"
+                                        "/rafishdar/users/**"
+                                )
+                                .hasAuthority("ADMIN")
+
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/rafishdar/users/buscar"
+                                )
+                                .hasAuthority("ADMIN")
+
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/rafishdar/authorities/**"
                                 )
                                 .hasAuthority("ADMIN")
 
                                 .requestMatchers(
                                         HttpMethod.PUT,
-                                        "/rafishdar/usuarios/**"
+                                        "/rafishdar/users/**"
+                                )
+                                .hasAuthority("ADMIN")
+
+                                .requestMatchers(
+                                        HttpMethod.DELETE,
+                                        "/rafishdar/users/**"
                                 )
                                 .hasAuthority("ADMIN")
 
@@ -178,7 +196,7 @@ public class SecurityConfiguration {
 
                                 .requestMatchers(
                                         HttpMethod.GET,
-                                        "/rafishdar/cuotas/**"
+                                        "/rafishdar/cuotas-pesca/**"
                                 )
                                 .hasAnyAuthority(
                                         "ADMIN",
@@ -187,19 +205,19 @@ public class SecurityConfiguration {
 
                                 .requestMatchers(
                                         HttpMethod.POST,
-                                        "/rafishdar/cuotas/**"
+                                        "/rafishdar/cuotas-pesca/**"
                                 )
                                 .hasAuthority("ADMIN")
 
                                 .requestMatchers(
                                         HttpMethod.PUT,
-                                        "/rafishdar/cuotas/**"
+                                        "/rafishdar/cuotas-pesca/**"
                                 )
                                 .hasAuthority("ADMIN")
 
                                 .requestMatchers(
                                         HttpMethod.DELETE,
-                                        "/rafishdar/cuotas/**"
+                                        "/rafishdar/cuotas-pesca/**"
                                 )
                                 .hasAuthority("ADMIN")
 
@@ -251,7 +269,8 @@ public class SecurityConfiguration {
                                 )
 
                                 .requestMatchers(
-                                        "/rafishdar/bitacoras_faena/**"
+                                        "/rafishdar/bitacoras/**",
+                                        "/rafishdar/detalles-captura/**"
                                 )
                                 .hasAnyAuthority(
                                         "ADMIN",
@@ -267,7 +286,7 @@ public class SecurityConfiguration {
                                 )
 
                                 .requestMatchers(
-                                        "/rafishdar/gastos_operativos/**"
+                                        "/rafishdar/gastos-operativos/**"
                                 )
                                 .hasAnyAuthority(
                                         "ADMIN",

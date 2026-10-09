@@ -39,9 +39,24 @@ public class UserServiceImpl
         return convertirLista(users);
     }
 
+    @Override
+    public User buscarPorId(Long id) {
+
+        if (id == null) {
+            return null;
+        }
+
+        User user = userRepository.findById(id).orElse(null);
+
+        if (user == null) {
+            return null;
+        }
+
+        return user;
+    }
 
     @Override
-    public UserDTO buscarPorId(Long id) {
+    public UserDTO buscarPorIdDTO(Long id) {
 
         if (id == null) {
             return null;
@@ -57,6 +72,17 @@ public class UserServiceImpl
         }
 
         return convertirDTO(user);
+    }
+
+    @Override
+    public List<UserDTO> buscarPorNombreOApellido(String termino) {
+        if (termino == null || termino.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return convertirLista(
+                userRepository.buscarPorNombreOApellido(termino.trim())
+        );
     }
 
 
@@ -211,27 +237,19 @@ public class UserServiceImpl
 
 
     @Override
-    public UserDTO cambiarEstado(
-            Long id,
-            String estado) {
+    public UserDTO eliminarLogico(Long id) {
+        return cambiarEstado(id, "Inactivo");
+    }
 
-        if (id == null ||
-                estado == null ||
-                estado.trim().isEmpty()) {
+    @Override
+    public UserDTO activar(Long id) {
+        return cambiarEstado(id, "Activo");
+    }
 
+    private UserDTO cambiarEstado(Long id, String estado) {
+        if (id == null) {
             return null;
         }
-
-
-        String nuevoEstado =
-                normalizarEstado(estado);
-
-        if (nuevoEstado == null) {
-
-            return null;
-        }
-
-
         User user =
                 userRepository
                         .findById(id)
@@ -242,9 +260,7 @@ public class UserServiceImpl
         }
 
 
-        user.setEstado(
-                nuevoEstado
-        );
+        user.setEstado(estado);
 
 
         User userActualizado =
@@ -436,25 +452,6 @@ public class UserServiceImpl
         }
 
         return true;
-    }
-
-
-    private String normalizarEstado(
-            String estado) {
-
-        if (estado.equalsIgnoreCase(
-                "Activo")) {
-
-            return "Activo";
-        }
-
-        if (estado.equalsIgnoreCase(
-                "Inactivo")) {
-
-            return "Inactivo";
-        }
-
-        return null;
     }
 
 

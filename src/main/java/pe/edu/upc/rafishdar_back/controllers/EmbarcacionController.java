@@ -36,6 +36,29 @@ public class EmbarcacionController {
         );
     }
 
+    @GetMapping("/embarcaciones/usuario/{usuarioId}")
+    public ResponseEntity<List<Embarcacion>> listarPorUsuario(
+            @PathVariable Long usuarioId) {
+        List<Embarcacion> embarcaciones =
+                embarcacionService.listarPorUsuario(usuarioId);
+        if (embarcaciones.isEmpty()) {
+            return new ResponseEntity<>(embarcaciones, HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<>(embarcaciones, HttpStatus.OK);
+    }
+
+    @GetMapping("/embarcaciones/matricula/{matricula}/existe")
+    public ResponseEntity<Boolean> existeMatricula(
+            @PathVariable String matricula) {
+        if (matricula.isBlank()) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        return new ResponseEntity<>(
+                embarcacionService.existeMatricula(matricula),
+                HttpStatus.OK
+        );
+    }
+
     @GetMapping("/embarcaciones/{id}")
     public ResponseEntity<Embarcacion> buscarporId(
             @PathVariable("id") Long id) {

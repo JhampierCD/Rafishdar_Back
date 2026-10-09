@@ -56,13 +56,27 @@ public class UserController {
         );
     }
 
+    @GetMapping("/users/buscar")
+    public ResponseEntity<List<UserDTO>> buscarPorNombreOApellido(
+            @RequestParam("termino") String termino) {
+        if (termino.isBlank()) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        List<UserDTO> foundUsers = userService.buscarPorNombreOApellido(termino);
+        if (foundUsers.isEmpty()) {
+            return new ResponseEntity<>(foundUsers, HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<>(foundUsers, HttpStatus.OK);
+    }
+
     // http://localhost:8080/rafishdar/users/1
     @GetMapping("/users/{id}")
-    public ResponseEntity<UserDTO> buscarPorId(
+    public ResponseEntity<UserDTO> buscarPorIdDTO(
             @PathVariable("id") Long id) {
 
         UserDTO foundUser =
-                userService.buscarPorId(id);
+                userService.buscarPorIdDTO(id);
 
         if (foundUser == null) {
             return new ResponseEntity<>(
@@ -179,24 +193,32 @@ public class UserController {
         );
     }
 
-    // http://localhost:8080/rafishdar/users/1/estado/Inactivo
-    @PutMapping("/users/{id}/estado/{estado}")
-    public ResponseEntity<UserDTO> cambiarEstado(
-            @PathVariable("id") Long id,
-            @PathVariable("estado") String estado) {
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<UserDTO> eliminarLogico(
+            @PathVariable("id") Long id) {
 
         UserDTO updatedUser =
-                userService.cambiarEstado(
-                        id,
-                        estado
-                );
+                userService.eliminarLogico(id);
 
         if (updatedUser == null) {
             return new ResponseEntity<>(
-                    HttpStatus.NOT_ACCEPTABLE
+                    HttpStatus.NOT_FOUND
             );
         }
 
+        return new ResponseEntity<>(
+                updatedUser,
+                HttpStatus.OK
+        );
+    }
+
+    @PutMapping("/users/{id}/activar")
+    public ResponseEntity<UserDTO> activar(
+            @PathVariable("id") Long id) {
+        UserDTO updatedUser = userService.activar(id);
+        if (updatedUser == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
         return new ResponseEntity<>(
                 updatedUser,
                 HttpStatus.OK

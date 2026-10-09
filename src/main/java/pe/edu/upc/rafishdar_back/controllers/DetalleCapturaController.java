@@ -21,6 +21,15 @@ public class DetalleCapturaController {
         this.capturaService = capturaService;
     }
 
+    @GetMapping("/detalles-captura")
+    public ResponseEntity<List<DetalleCaptura>> listarTodo() {
+        List<DetalleCaptura> capturas = capturaService.listarTodo();
+        if (capturas.isEmpty()) {
+            return new ResponseEntity<>(capturas, HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<>(capturas, HttpStatus.OK);
+    }
+
     // http://localhost:8080/rafishdar/detalles-captura/bitacoras/1
     @PostMapping("/detalles-captura/bitacoras/{idBitacora}")
     public ResponseEntity<DetalleCaptura> insertar(

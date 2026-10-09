@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.rafishdar_back.dtos.TemporadaDTO;
 import pe.edu.upc.rafishdar_back.services.TemporadaService;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -138,6 +139,22 @@ public class TemporadaController {
                 foundTemporadas,
                 HttpStatus.OK
         );
+    }
+
+    @GetMapping("/temporadas/superpuestas")
+    public ResponseEntity<List<TemporadaDTO>> buscarSuperpuestas(
+            @RequestParam LocalDate inicio,
+            @RequestParam LocalDate fin) {
+        if (inicio.isAfter(fin)) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        List<TemporadaDTO> temporadas =
+                temporadaService.buscarSuperpuestas(inicio, fin);
+        if (temporadas.isEmpty()) {
+            return new ResponseEntity<>(temporadas, HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<>(temporadas, HttpStatus.OK);
     }
 
 }

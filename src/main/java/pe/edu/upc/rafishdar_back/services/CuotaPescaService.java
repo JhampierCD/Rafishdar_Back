@@ -24,4 +24,6 @@ public interface CuotaPescaService {
     List<CuotaPescaDTO> listarPorEspecie(Long especieId);
 
     List<CuotaPescaDTO> listarPorTemporada(Long temporadaId);
+
+    List<CuotaPescaDTO> listarPorTemporadaConEspecie(Long temporadaId);
 }

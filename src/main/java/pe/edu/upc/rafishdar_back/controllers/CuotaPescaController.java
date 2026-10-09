@@ -182,4 +182,15 @@ public class CuotaPescaController {
                 HttpStatus.OK
         );
     }
+
+    @GetMapping("/cuotas-pesca/temporada/{temporadaId}/especies")
+    public ResponseEntity<List<CuotaPescaDTO>> listarPorTemporadaConEspecie(
+            @PathVariable("temporadaId") Long temporadaId) {
+        List<CuotaPescaDTO> cuotas =
+                cuotaPescaService.listarPorTemporadaConEspecie(temporadaId);
+        if (cuotas.isEmpty()) {
+            return new ResponseEntity<>(cuotas, HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<>(cuotas, HttpStatus.OK);
+    }
 }

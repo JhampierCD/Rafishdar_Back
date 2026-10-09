@@ -4,6 +4,7 @@ package pe.edu.upc.rafishdar_back.serviceimpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pe.edu.upc.rafishdar_back.dtos.CuotaPescaDTO;
+import pe.edu.upc.rafishdar_back.dtos.EspeciePezDTO;
 import pe.edu.upc.rafishdar_back.entities.CuotaPesca;
 import pe.edu.upc.rafishdar_back.entities.EspeciePez;
 import pe.edu.upc.rafishdar_back.entities.Temporada;
@@ -86,10 +87,11 @@ public class CuotaPescaServiceImpl implements CuotaPescaService {
 
         CuotaPesca cuotaExistente =
                 cuotaPescaRepository
-                        .findByEspecie_IdAndTemporada_Id(
+                        .findByEspecieIdAndTemporadaId(
                                 cuotaPescaDTO.getEspecieId(),
                                 cuotaPescaDTO.getTemporadaId()
-                        );
+                        )
+                        .orElse(null);
 
         if (cuotaExistente != null) {
             return null;
@@ -158,10 +160,11 @@ public class CuotaPescaServiceImpl implements CuotaPescaService {
 
         CuotaPesca cuotaRepetida =
                 cuotaPescaRepository
-                        .findByEspecie_IdAndTemporada_Id(
+                        .findByEspecieIdAndTemporadaId(
                                 cuotaPescaDTO.getEspecieId(),
                                 cuotaPescaDTO.getTemporadaId()
-                        );
+                        )
+                        .orElse(null);
 
         if (cuotaRepetida != null &&
                 !cuotaRepetida
@@ -219,10 +222,11 @@ public class CuotaPescaServiceImpl implements CuotaPescaService {
 
         CuotaPesca cuota =
                 cuotaPescaRepository
-                        .findByEspecie_IdAndTemporada_Id(
+                        .findByEspecieIdAndTemporadaId(
                                 especieId,
                                 temporadaId
-                        );
+                        )
+                        .orElse(null);
 
         if (cuota == null) {
             return null;
@@ -263,6 +267,28 @@ public class CuotaPescaServiceImpl implements CuotaPescaService {
         return convertirLista(cuotas);
     }
 
+    @Override
+    public List<CuotaPescaDTO> listarPorTemporadaConEspecie(Long temporadaId) {
+        if (temporadaId == null) {
+            return new ArrayList<>();
+        }
+
+        List<CuotaPesca> cuotas =
+                cuotaPescaRepository.findByTemporadaIdWithEspecie(temporadaId);
+        List<CuotaPescaDTO> cuotasDTO = convertirLista(cuotas);
+
+        for (int i = 0; i < cuotas.size(); i++) {
+            EspeciePez especie = cuotas.get(i).getEspecie();
+            EspeciePezDTO especieDTO = new EspeciePezDTO();
+            especieDTO.setId(especie.getId());
+            especieDTO.setNombreComun(especie.getNombreComun());
+            especieDTO.setNombreCientifico(especie.getNombreCientifico());
+            especieDTO.setEstadoVeda(especie.getEstadoVeda());
+            cuotasDTO.get(i).setEspecie(especieDTO);
+        }
+
+        return cuotasDTO;
+    }
 
     private boolean datosValidos(
             CuotaPescaDTO cuotaPescaDTO) {

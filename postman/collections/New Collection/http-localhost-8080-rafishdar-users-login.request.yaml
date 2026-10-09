@@ -1,0 +1,14 @@
+$kind: http-request
+name: http://localhost:8080/rafishdar/users/login
+url: http://localhost:8080/rafishdar/users/login
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"correo\": \"admin@rafishdar.com\",\r
+
+    \  \"password\": \"Admin123\"\r
+
+    }"
+order: 1000

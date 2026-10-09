@@ -36,6 +36,35 @@ public class ZonaPescaController {
         );
     }
 
+    @GetMapping("/zonas-pesca/top3/especie/{especieId}")
+    public ResponseEntity<List<ZonaPesca>> listarTop3Historicas(
+            @PathVariable Long especieId,
+            @RequestParam int mes) {
+        if (mes < 1 || mes > 12) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        List<ZonaPesca> zonas =
+                zonaPescaService.listarTop3Historicas(especieId, mes);
+        if (zonas.isEmpty()) {
+            return new ResponseEntity<>(zonas, HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<>(zonas, HttpStatus.OK);
+    }
+
+    @GetMapping("/zonas-pesca/cercanas")
+    public ResponseEntity<List<ZonaPesca>> listarCercanasACosta(
+            @RequestParam Double distanciaMaxima) {
+        if (distanciaMaxima < 0) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        List<ZonaPesca> zonas =
+                zonaPescaService.listarCercanasACosta(distanciaMaxima);
+        if (zonas.isEmpty()) {
+            return new ResponseEntity<>(zonas, HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<>(zonas, HttpStatus.OK);
+    }
+
     @GetMapping("/zonas-pesca/{id}")
     public ResponseEntity<ZonaPesca> buscarporId(
             @PathVariable("id") Long id) {

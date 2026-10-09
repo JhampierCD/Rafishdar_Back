@@ -10,4 +10,6 @@ public interface ZonaPescaService {
     public ZonaPesca insertar(ZonaPesca zonaPesca);
     public ZonaPesca actualizar(ZonaPesca zonaPesca);
     public Boolean eliminar(Long id);
+    List<ZonaPesca> listarTop3Historicas(Long especieId, int mes);
+    List<ZonaPesca> listarCercanasACosta(Double distanciaMaxima);
 }

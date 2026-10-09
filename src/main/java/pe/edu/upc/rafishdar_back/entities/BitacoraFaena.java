@@ -49,9 +49,11 @@ public class BitacoraFaena {
     private GastoOperativo gastoOperativo;
 
     @OneToOne(mappedBy = "bitacora")
+    @JsonIgnore
     private CondicionClimatica condicionClimatica;
 
     @OneToOne(mappedBy = "bitacora")
+    @JsonIgnore
     private RecomendacionIA recomendacionIA;
 
 }

@@ -25,9 +25,11 @@ public class EmbarcacionServiceImpl implements EmbarcacionService {
 
     @Override
     public Embarcacion insertar(Embarcacion embarcacion) {
-        Embarcacion foundEmbarcacion = embarcacionRepository.findEmbarcacionByMatriculaAndNombre(embarcacion.getMatricula(),embarcacion.getNombre());
-        if (foundEmbarcacion != null) {
-            throw new IllegalArgumentException("Ya existe una embarcación con la misma matrícula y nombre.");
+        if (embarcacion == null) {
+            return null;
+        }
+        if (existeMatricula(embarcacion.getMatricula())) {
+            return null;
         }
         return embarcacionRepository.save(embarcacion);
     }
@@ -48,7 +50,9 @@ public class EmbarcacionServiceImpl implements EmbarcacionService {
             embarcacion.setCapacidadToneladas(foundEmbarcacion.getCapacidadToneladas());
         }
 
-        if (embarcacionRepository.findEmbarcacionByMatriculaAndNombre(embarcacion.getMatricula(),embarcacion.getNombre())!=null){
+        if (embarcacion.getMatricula() != null &&
+                !embarcacion.getMatricula().equals(foundEmbarcacion.getMatricula()) &&
+                existeMatricula(embarcacion.getMatricula())) {
            return null;
         }
         return embarcacionRepository.save(embarcacion);
@@ -62,5 +66,19 @@ public class EmbarcacionServiceImpl implements EmbarcacionService {
         }
         embarcacionRepository.deleteById(id);
         return true;
+    }
+
+    @Override
+    public List<Embarcacion> listarPorUsuario(Long usuarioId) {
+        if (usuarioId == null) {
+            return List.of();
+        }
+        return embarcacionRepository.findByUsuarioId(usuarioId);
+    }
+
+    @Override
+    public boolean existeMatricula(String matricula) {
+        return matricula != null && !matricula.isBlank() &&
+                embarcacionRepository.existsByMatricula(matricula.trim());
     }
 }

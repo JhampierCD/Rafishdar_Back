@@ -37,6 +37,11 @@ public class BitacoraFaenaServiceImpl implements BitacoraFaenaService {
 
     // --- MÉTODOS BASE (CRUD) ---
 
+    @Override
+    public List<BitacoraFaena> listarTodo() {
+        return bitacoraRepository.findAll();
+    }
+
     public BitacoraFaena insertarBitacora(BitacoraFaena request) {
         User usuario = userRepository.findById(request.getUsuario().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));

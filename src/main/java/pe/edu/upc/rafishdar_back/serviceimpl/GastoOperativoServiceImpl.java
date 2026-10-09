@@ -13,6 +13,7 @@ import pe.edu.upc.rafishdar_back.repositories.GastoOperativoRepository;
 import pe.edu.upc.rafishdar_back.services.GastoOperativoService;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @Transactional
@@ -25,6 +26,11 @@ public class GastoOperativoServiceImpl implements GastoOperativoService {
     private BitacoraFaenaRepository bitacoraRepository;
 
     // --- MÉTODOS BASE (CRUD) ---
+
+    @Override
+    public List<GastoOperativo> listarTodo() {
+        return gastoRepository.findAll();
+    }
 
     @Override
     public GastoOperativo insertarGasto(Long idBitacora, GastoOperativoRequestDTO request) {
@@ -61,6 +67,20 @@ public class GastoOperativoServiceImpl implements GastoOperativoService {
     public GastoOperativo buscarGastoPorBitacora(Long idBitacora) {
         return gastoRepository.findByBitacoraId(idBitacora)
                 .orElseThrow(() -> new ResourceNotFoundException("Gasto operativo no encontrado"));
+    }
+
+    @Override
+    public void eliminar(Long idBitacora) {
+        GastoOperativo gasto = gastoRepository.findByBitacoraId(idBitacora)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Gasto operativo no encontrado para la bitácora"
+                ));
+        if ("Finalizada".equals(gasto.getBitacora().getEstado())) {
+            throw new ConflictException(
+                    "No se puede eliminar el gasto de una bitácora finalizada"
+            );
+        }
+        gastoRepository.deleteByBitacoraId(idBitacora);
     }
 
     // --- MÉTODOS ANALÍTICOS ---
