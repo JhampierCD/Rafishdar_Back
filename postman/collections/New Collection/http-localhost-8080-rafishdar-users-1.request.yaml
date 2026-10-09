@@ -1,0 +1,24 @@
+$kind: http-request
+name: http://localhost:8080/rafishdar/users
+url: http://localhost:8080/rafishdar/users
+method: PUT
+body:
+  type: json
+  content: "{\r
+
+    \    \"id\": 2,\r
+
+    \    \"nombres\": \"Carlos\",\r
+
+    \    \"apellidos\": \"Mendoza\",\r
+
+    \    \"correo\": \"carlosmendoza1@pesca.com\",\r
+
+    \    \"estado\": \"Activo\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{json_web_token_01ii}}"
+order: 4000

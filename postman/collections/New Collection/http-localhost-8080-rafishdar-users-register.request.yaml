@@ -1,0 +1,18 @@
+$kind: http-request
+name: http://localhost:8080/rafishdar/users/register
+url: http://localhost:8080/rafishdar/users/register
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"nombres\": \"Jeremy\",\r
+
+    \    \"apellidos\": \"Gardner\",\r
+
+    \    \"correo\": \"jeremy@pesca.com\",\r
+
+    \    \"password\": \"1234cinco\"\r
+
+    }"
+order: 3000

@@ -1,4 +1,4 @@
-package pe.edu.upc.rafishdar_back.serviceimplementation;
+package pe.edu.upc.rafishdar_back.serviceimpl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;

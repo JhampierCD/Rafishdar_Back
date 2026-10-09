@@ -26,6 +26,7 @@ public class DetalleCaptura {
     private BitacoraFaena bitacora;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "especie_id")
     private EspeciePez especie;
 

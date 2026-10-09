@@ -1,0 +1,9 @@
+$kind: http-request
+name: http://localhost:8080/rafishdar/users/6
+url: http://localhost:8080/rafishdar/users/6
+method: DELETE
+auth:
+  type: bearer
+  credentials:
+    token: "{{json_web_token_01ii}}"
+order: 5000
