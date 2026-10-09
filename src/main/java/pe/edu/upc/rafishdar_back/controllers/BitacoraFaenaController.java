@@ -19,6 +19,7 @@ public class BitacoraFaenaController {
     @Autowired
     private BitacoraFaenaService bitacoraService;
 
+    // http://localhost:8080/rafishdar/bitacoras
     @GetMapping("/bitacoras")
     public ResponseEntity<List<BitacoraFaena>> listarTodo() {
         List<BitacoraFaena> bitacoras = bitacoraService.listarTodo();
