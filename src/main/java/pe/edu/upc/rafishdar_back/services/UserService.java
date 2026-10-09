@@ -11,15 +11,19 @@ import java.util.List;
 public interface UserService {
     List<UserDTO> listarTodo();
 
+    User buscarPorId(Long id);
+
     UserDTO buscarPorIdDTO(Long id);
 
-    User buscarPorId(Long id);
+    List<UserDTO> buscarPorNombreOApellido(String termino);
 
     UserDTO registrar(UserRegistroDTO userRegistroDTO);
 
     UserDTO actualizar(UserActualizarDTO userActualizarDTO);
 
-    UserDTO cambiarEstado(Long id, String estado);
+    UserDTO eliminarLogico(Long id);
+
+    UserDTO activar(Long id);
 
     boolean cambiarPassword(UserCambioPasswordDTO userCambioPasswordDTO);
 }

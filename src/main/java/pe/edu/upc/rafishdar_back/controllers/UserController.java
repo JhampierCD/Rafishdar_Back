@@ -1,14 +1,20 @@
 package pe.edu.upc.rafishdar_back.controllers;
 
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
+import pe.edu.upc.rafishdar_back.dtos.TokenDTO;
 import pe.edu.upc.rafishdar_back.dtos.UserActualizarDTO;
 import pe.edu.upc.rafishdar_back.dtos.UserCambioPasswordDTO;
 import pe.edu.upc.rafishdar_back.dtos.UserDTO;
 import pe.edu.upc.rafishdar_back.dtos.UserRegistroDTO;
+import pe.edu.upc.rafishdar_back.entities.User;
+import pe.edu.upc.rafishdar_back.security.JwtUtilService;
+import pe.edu.upc.rafishdar_back.security.UserSecurity;
+import pe.edu.upc.rafishdar_back.serviceimpl.UserDetailsServiceImpl;
 import pe.edu.upc.rafishdar_back.services.UserService;
 
 import java.util.List;
@@ -17,29 +23,60 @@ import java.util.List;
 @CrossOrigin("*")
 @RequestMapping("/rafishdar")
 public class UserController {
+
     @Autowired
     UserService userService;
 
+    @Autowired
+    AuthenticationManager authenticationManager;
 
-    // http://localhost:8080/rafishdar/usuarios
-    @GetMapping("/usuarios")
+    @Autowired
+    UserDetailsServiceImpl userDetailsServiceImpl;
+
+    @Autowired
+    JwtUtilService jwtUtilService;
+
+    // http://localhost:8080/rafishdar/users
+    @GetMapping("/users")
     public ResponseEntity<List<UserDTO>> listar() {
 
-        List<UserDTO> foundUsers = userService.listarTodo();
+        List<UserDTO> foundUsers =
+                userService.listarTodo();
 
+        if (foundUsers.isEmpty()) {
+            return new ResponseEntity<>(
+                    foundUsers,
+                    HttpStatus.NO_CONTENT
+            );
+        }
+
+        return new ResponseEntity<>(
+                foundUsers,
+                HttpStatus.OK
+        );
+    }
+
+    @GetMapping("/users/buscar")
+    public ResponseEntity<List<UserDTO>> buscarPorNombreOApellido(
+            @RequestParam("termino") String termino) {
+        if (termino.isBlank()) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        List<UserDTO> foundUsers = userService.buscarPorNombreOApellido(termino);
         if (foundUsers.isEmpty()) {
             return new ResponseEntity<>(foundUsers, HttpStatus.NO_CONTENT);
         }
-
         return new ResponseEntity<>(foundUsers, HttpStatus.OK);
     }
 
+    // http://localhost:8080/rafishdar/users/1
+    @GetMapping("/users/{id}")
+    public ResponseEntity<UserDTO> buscarPorIdDTO(
+            @PathVariable("id") Long id) {
 
-    // http://localhost:8080/rafishdar/usuarios/1
-    @GetMapping("/usuarios/{id}")
-    public ResponseEntity<UserDTO> buscarPorIdDTO(@PathVariable("id") Long id) {
-
-        UserDTO foundUser = userService.buscarPorIdDTO(id);
+        UserDTO foundUser =
+                userService.buscarPorIdDTO(id);
 
         if (foundUser == null) {
             return new ResponseEntity<>(
@@ -48,27 +85,96 @@ public class UserController {
             );
         }
 
-        return new ResponseEntity<>(foundUser, HttpStatus.OK);
+        return new ResponseEntity<>(
+                foundUser,
+                HttpStatus.OK
+        );
     }
 
+    // http://localhost:8080/rafishdar/users/register
+    @PostMapping("/users/register")
+    public ResponseEntity<UserDTO> registrar(
+            @RequestBody UserRegistroDTO userRegistroDTO) {
 
-    // http://localhost:8080/rafishdar/usuarios
-    @PostMapping("/usuarios")
-    public ResponseEntity<UserDTO> registrar(@RequestBody UserRegistroDTO userRegistroDTO) {
-
-        UserDTO newUser = userService.registrar(userRegistroDTO);
+        UserDTO newUser =
+                userService.registrar(
+                        userRegistroDTO
+                );
 
         if (newUser == null) {
-            return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE);
+            return new ResponseEntity<>(
+                    HttpStatus.NOT_ACCEPTABLE
+            );
         }
 
-        return new ResponseEntity<>(newUser, HttpStatus.CREATED);
+        return new ResponseEntity<>(
+                newUser,
+                HttpStatus.CREATED
+        );
     }
 
+    // http://localhost:8080/rafishdar/users/login
+    @PostMapping("/users/login")
+    public ResponseEntity<TokenDTO> login(
+            @RequestBody User user) {
 
-    // http://localhost:8080/rafishdar/usuarios
-    @PutMapping("/usuarios")
-    public ResponseEntity<UserDTO> actualizar(@RequestBody UserActualizarDTO userActualizarDTO) {
+        try {
+
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            user.getCorreo(),
+                            user.getPassword()
+                    )
+            );
+
+            UserSecurity securityUser =
+                    (UserSecurity)
+                            userDetailsServiceImpl
+                                    .loadUserByUsername(
+                                            user.getCorreo()
+                                    );
+
+            String token =
+                    jwtUtilService.generateToken(
+                            securityUser
+                    );
+
+            String authorities =
+                    securityUser
+                            .getAuthorities()
+                            .stream()
+                            .map(
+                                    n -> n.getAuthority()
+                            )
+                            .toList()
+                            .toString();
+
+            TokenDTO tokenDTO =
+                    new TokenDTO(
+                            token,
+                            securityUser
+                                    .getUser()
+                                    .getId(),
+                            authorities
+                    );
+
+            return new ResponseEntity<>(
+                    tokenDTO,
+                    HttpStatus.OK
+            );
+
+        } catch (Exception e) {
+
+            return new ResponseEntity<>(
+                    HttpStatus.UNAUTHORIZED
+            );
+        }
+    }
+
+    // http://localhost:8080/rafishdar/users
+    @PutMapping("/users")
+    public ResponseEntity<UserDTO> actualizar(
+            @RequestBody UserActualizarDTO userActualizarDTO) {
 
         UserDTO updatedUser =
                 userService.actualizar(
@@ -76,7 +182,6 @@ public class UserController {
                 );
 
         if (updatedUser == null) {
-
             return new ResponseEntity<>(
                     HttpStatus.NOT_ACCEPTABLE
             );
@@ -88,30 +193,54 @@ public class UserController {
         );
     }
 
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<UserDTO> eliminarLogico(
+            @PathVariable("id") Long id) {
 
-    // http://localhost:8080/rafishdar/usuarios/1/estado/Inactivo
-    @PutMapping("/usuarios/{id}/estado/{estado}")
-    public ResponseEntity<UserDTO> cambiarEstado(@PathVariable("id") Long id, @PathVariable("estado") String estado) {
-
-        UserDTO updatedUser = userService.cambiarEstado(id, estado);
+        UserDTO updatedUser =
+                userService.eliminarLogico(id);
 
         if (updatedUser == null) {
-            return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE);
+            return new ResponseEntity<>(
+                    HttpStatus.NOT_FOUND
+            );
         }
 
-        return new ResponseEntity<>(updatedUser, HttpStatus.OK);
+        return new ResponseEntity<>(
+                updatedUser,
+                HttpStatus.OK
+        );
     }
 
+    @PutMapping("/users/{id}/activar")
+    public ResponseEntity<UserDTO> activar(
+            @PathVariable("id") Long id) {
+        UserDTO updatedUser = userService.activar(id);
+        if (updatedUser == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(
+                updatedUser,
+                HttpStatus.OK
+        );
+    }
 
-    // http://localhost:8080/rafishdar/usuarios/password
-    @PutMapping("/usuarios/password")
-    public ResponseEntity<HttpStatus> cambiarPassword(@RequestBody UserCambioPasswordDTO userCambioPasswordDTO) {
+    // http://localhost:8080/rafishdar/users/password
+    @PutMapping("/users/password")
+    public ResponseEntity<HttpStatus> cambiarPassword(
+            @RequestBody UserCambioPasswordDTO userCambioPasswordDTO) {
 
-        if (!userService.cambiarPassword(userCambioPasswordDTO)) {
-            return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE);
+        if (!userService.cambiarPassword(
+                userCambioPasswordDTO
+        )) {
+
+            return new ResponseEntity<>(
+                    HttpStatus.NOT_ACCEPTABLE
+            );
         }
 
-        return new ResponseEntity<>(HttpStatus.OK);
+        return new ResponseEntity<>(
+                HttpStatus.OK
+        );
     }
-
 }

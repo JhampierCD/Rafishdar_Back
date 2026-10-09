@@ -10,10 +10,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface BitacoraFaenaRepository extends JpaRepository<BitacoraFaena, Long> {
-    List<BitacoraFaena> findByUsuarioId(Long idUsuario);
+    List<BitacoraFaena> findByUsuarioId(Long userId);
     List<BitacoraFaena> findByUsuarioIdAndEstado(Long userId, String estado);
-    List<BitacoraFaena> findByZonaPescaIdAndEstadoAndFechaHoraSalidaAfter(Long zonaId, String estado, java.time.LocalDateTime desde);
-    // US-47: radar de incidencias
 
     @Query("SELECT b FROM BitacoraFaena b " +
             "WHERE b.zonaPesca.id = :idZona " +
@@ -21,8 +19,8 @@ public interface BitacoraFaenaRepository extends JpaRepository<BitacoraFaena, Lo
             "AND (LOWER(CAST(b.observaciones AS string)) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
             "OR LOWER(CAST(b.estado AS string)) LIKE LOWER(CONCAT('%', :keyword, '%'))) ")
     List<BitacoraFaena> detectarIncidenciasRecientesEnZona(@Param("idZona") Long idZona,
-                                                           @Param("desde") LocalDateTime desde,
-                                                           @Param("keyword") String keyword);
+                                                          @Param("desde") LocalDateTime desde,
+                                                          @Param("keyword") String keyword);
 
     // Calcular el tiempo promedio de faena (en minutos) en un rango de fechas.
     // Usa TIMESTAMPDIFF (específico de MySQL) o la función equivalente de tu BD.

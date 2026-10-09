@@ -1,12 +1,15 @@
-package pe.edu.upc.rafishdar_back.serviceimpl;
+package pe.edu.upc.rafishdar_back.serviceimplementation;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import pe.edu.upc.rafishdar_back.dtos.UserActualizarDTO;
 import pe.edu.upc.rafishdar_back.dtos.UserCambioPasswordDTO;
 import pe.edu.upc.rafishdar_back.dtos.UserDTO;
 import pe.edu.upc.rafishdar_back.dtos.UserRegistroDTO;
+import pe.edu.upc.rafishdar_back.entities.Authority;
 import pe.edu.upc.rafishdar_back.entities.User;
+import pe.edu.upc.rafishdar_back.repositories.AuthorityRepository;
 import pe.edu.upc.rafishdar_back.repositories.UserRepository;
 import pe.edu.upc.rafishdar_back.services.UserService;
 
@@ -14,19 +17,43 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl
+        implements UserService {
 
     @Autowired
     UserRepository userRepository;
 
+    @Autowired
+    AuthorityRepository authorityRepository;
+
+    @Autowired
+    PasswordEncoder passwordEncoder;
+
+
     @Override
     public List<UserDTO> listarTodo() {
 
-        List<User> users = userRepository.findAll();
+        List<User> users =
+                userRepository.findAll();
 
         return convertirLista(users);
     }
 
+    @Override
+    public User buscarPorId(Long id) {
+
+        if (id == null) {
+            return null;
+        }
+
+        User user = userRepository.findById(id).orElse(null);
+
+        if (user == null) {
+            return null;
+        }
+
+        return user;
+    }
 
     @Override
     public UserDTO buscarPorIdDTO(Long id) {
@@ -35,9 +62,10 @@ public class UserServiceImpl implements UserService {
             return null;
         }
 
-        User user = userRepository
-                .findById(id)
-                .orElse(null);
+        User user =
+                userRepository
+                        .findById(id)
+                        .orElse(null);
 
         if (user == null) {
             return null;
@@ -47,26 +75,49 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User buscarPorId(Long id) {
-        return userRepository.findById(id).orElse(null);
+    public List<UserDTO> buscarPorNombreOApellido(String termino) {
+        if (termino == null || termino.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return convertirLista(
+                userRepository.buscarPorNombreOApellido(termino.trim())
+        );
     }
 
 
     @Override
-    public UserDTO registrar(UserRegistroDTO userRegistroDTO) {
+    public UserDTO registrar(
+            UserRegistroDTO userRegistroDTO) {
 
-        if (!datosRegistroValidos(userRegistroDTO)) {
+        if (!datosRegistroValidos(
+                userRegistroDTO)) {
+
             return null;
         }
 
-        String correo = userRegistroDTO
-                .getCorreo()
-                .trim()
-                .toLowerCase();
+        String correo =
+                userRegistroDTO
+                        .getCorreo()
+                        .trim()
+                        .toLowerCase();
 
-        if (userRepository.existsByCorreoIgnoreCase(correo)) {
+        if (userRepository
+                .existsByCorreoIgnoreCase(correo)) {
+
             return null;
         }
+
+
+        Authority authorityPescador =
+                authorityRepository
+                        .findByName("PESCADOR");
+
+        if (authorityPescador == null) {
+
+            return null;
+        }
+
 
         User user = new User();
 
@@ -84,101 +135,194 @@ public class UserServiceImpl implements UserService {
 
         user.setCorreo(correo);
 
-        user.setPassword(userRegistroDTO.getPassword()
+
+        user.setPassword(
+                passwordEncoder.encode(
+                        userRegistroDTO
+                                .getPassword()
+                )
         );
+
 
         user.setEstado("Activo");
 
-        User nuevoUser = userRepository.save(user);
+
+        List<Authority> authorities =
+                new ArrayList<>();
+
+        authorities.add(
+                authorityPescador
+        );
+
+        user.setAuthorities(
+                authorities
+        );
+
+
+        User nuevoUser =
+                userRepository.save(user);
 
         return convertirDTO(nuevoUser);
     }
 
 
     @Override
-    public UserDTO actualizar(UserActualizarDTO userActualizarDTO) {
+    public UserDTO actualizar(
+            UserActualizarDTO userActualizarDTO) {
 
-        if (!datosActualizacionValidos(userActualizarDTO)) {
+        if (!datosActualizacionValidos(
+                userActualizarDTO)) {
+
             return null;
         }
 
-        User user = userRepository
-                .findById(userActualizarDTO.getId())
-                .orElse(null);
+
+        User user =
+                userRepository
+                        .findById(
+                                userActualizarDTO.getId()
+                        )
+                        .orElse(null);
 
         if (user == null) {
             return null;
         }
 
-        String correo = userActualizarDTO
-                .getCorreo()
-                .trim()
-                .toLowerCase();
 
-        User userConMismoCorreo = userRepository.findByCorreoIgnoreCase(correo);
+        String correo =
+                userActualizarDTO
+                        .getCorreo()
+                        .trim()
+                        .toLowerCase();
 
-        if (userConMismoCorreo != null && !userConMismoCorreo.getId().equals(user.getId())) {
+
+        User userConMismoCorreo =
+                userRepository
+                        .findByCorreoIgnoreCase(
+                                correo
+                        );
+
+
+        if (userConMismoCorreo != null &&
+                !userConMismoCorreo
+                        .getId()
+                        .equals(user.getId())) {
+
             return null;
         }
 
-        user.setNombres(userActualizarDTO.getNombres().trim());
-        user.setApellidos(userActualizarDTO.getApellidos().trim());
+
+        user.setNombres(
+                userActualizarDTO
+                        .getNombres()
+                        .trim()
+        );
+
+        user.setApellidos(
+                userActualizarDTO
+                        .getApellidos()
+                        .trim()
+        );
+
         user.setCorreo(correo);
-        User userActualizado = userRepository.save(user);
-        return convertirDTO(userActualizado);
+
+
+        User userActualizado =
+                userRepository.save(user);
+
+        return convertirDTO(
+                userActualizado
+        );
     }
 
 
     @Override
-    public UserDTO cambiarEstado(Long id, String estado) {
+    public UserDTO eliminarLogico(Long id) {
+        return cambiarEstado(id, "Inactivo");
+    }
 
-        if (id == null || estado == null || estado.trim().isEmpty()) {
+    @Override
+    public UserDTO activar(Long id) {
+        return cambiarEstado(id, "Activo");
+    }
+
+    private UserDTO cambiarEstado(Long id, String estado) {
+        if (id == null) {
             return null;
         }
-
-        String nuevoEstado = normalizarEstado(estado);
-
-        if (nuevoEstado == null) {
-            return null;
-        }
-
-        User user = userRepository.findById(id).orElse(null);
+        User user =
+                userRepository
+                        .findById(id)
+                        .orElse(null);
 
         if (user == null) {
             return null;
         }
 
-        user.setEstado(nuevoEstado);
 
-        User userActualizado = userRepository.save(user);
+        user.setEstado(estado);
 
-        return convertirDTO(userActualizado);
+
+        User userActualizado =
+                userRepository.save(user);
+
+        return convertirDTO(
+                userActualizado
+        );
     }
 
 
     @Override
-    public boolean cambiarPassword(UserCambioPasswordDTO userCambioPasswordDTO) {
+    public boolean cambiarPassword(
+            UserCambioPasswordDTO
+                    userCambioPasswordDTO) {
 
         if (!datosCambioPasswordValidos(
                 userCambioPasswordDTO)) {
+
             return false;
         }
 
-        User user = userRepository.findById(userCambioPasswordDTO.getUserId()).orElse(null);
+
+        User user =
+                userRepository
+                        .findById(
+                                userCambioPasswordDTO
+                                        .getUserId()
+                        )
+                        .orElse(null);
 
         if (user == null) {
+
             return false;
         }
 
-        if (!user.getPassword().equals(userCambioPasswordDTO.getPasswordActual())) {
+
+        if (!passwordEncoder.matches(
+                userCambioPasswordDTO
+                        .getPasswordActual(),
+                user.getPassword())) {
+
             return false;
         }
 
-        if (user.getPassword().equals(userCambioPasswordDTO.getPasswordNueva())) {
+
+        if (passwordEncoder.matches(
+                userCambioPasswordDTO
+                        .getPasswordNueva(),
+                user.getPassword())) {
+
             return false;
         }
 
-        user.setPassword(userCambioPasswordDTO.getPasswordNueva());
+
+        user.setPassword(
+                passwordEncoder.encode(
+                        userCambioPasswordDTO
+                                .getPasswordNueva()
+                )
+        );
+
 
         userRepository.save(user);
 
@@ -186,7 +330,8 @@ public class UserServiceImpl implements UserService {
     }
 
 
-    private boolean datosRegistroValidos(UserRegistroDTO dto) {
+    private boolean datosRegistroValidos(
+            UserRegistroDTO dto) {
 
         if (dto == null) {
             return false;
@@ -200,17 +345,14 @@ public class UserServiceImpl implements UserService {
             return false;
         }
 
-        if (!passwordValida(
-                dto.getPassword())) {
-
-            return false;
-        }
-
-        return true;
+        return passwordValida(
+                dto.getPassword()
+        );
     }
 
 
-    private boolean datosActualizacionValidos(UserActualizarDTO dto) {
+    private boolean datosActualizacionValidos(
+            UserActualizarDTO dto) {
 
         if (dto == null ||
                 dto.getId() == null) {
@@ -218,11 +360,16 @@ public class UserServiceImpl implements UserService {
             return false;
         }
 
-        return datosPersonalesValidos(dto.getNombres(), dto.getApellidos(), dto.getCorreo());
+        return datosPersonalesValidos(
+                dto.getNombres(),
+                dto.getApellidos(),
+                dto.getCorreo()
+        );
     }
 
 
-    private boolean datosCambioPasswordValidos(UserCambioPasswordDTO dto) {
+    private boolean datosCambioPasswordValidos(
+            UserCambioPasswordDTO dto) {
 
         if (dto == null) {
             return false;
@@ -240,27 +387,32 @@ public class UserServiceImpl implements UserService {
             return false;
         }
 
-        if (!passwordValida(
-                dto.getPasswordNueva())) {
-
-            return false;
-        }
-
-        return true;
+        return passwordValida(
+                dto.getPasswordNueva()
+        );
     }
 
 
-    private boolean datosPersonalesValidos(String nombres, String apellidos, String correo) {
+    private boolean datosPersonalesValidos(
+            String nombres,
+            String apellidos,
+            String correo) {
 
-        if (nombres == null || nombres.trim().isEmpty()) {
+        if (nombres == null ||
+                nombres.trim().isEmpty()) {
+
             return false;
         }
 
-        if (apellidos == null || apellidos.trim().isEmpty()) {
+        if (apellidos == null ||
+                apellidos.trim().isEmpty()) {
+
             return false;
         }
 
-        if (correo == null || correo.trim().isEmpty()) {
+        if (correo == null ||
+                correo.trim().isEmpty()) {
+
             return false;
         }
 
@@ -276,17 +428,18 @@ public class UserServiceImpl implements UserService {
             return false;
         }
 
-        if (!correo.trim().matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
-            return false;
-        }
-
-        return true;
+        return correo.trim().matches(
+                "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$"
+        );
     }
 
 
-    private boolean passwordValida(String password) {
+    private boolean passwordValida(
+            String password) {
 
-        if (password == null || password.trim().isEmpty()) {
+        if (password == null ||
+                password.trim().isEmpty()) {
+
             return false;
         }
 
@@ -302,35 +455,38 @@ public class UserServiceImpl implements UserService {
     }
 
 
-    private String normalizarEstado(String estado) {
+    private UserDTO convertirDTO(
+            User user) {
 
-        if (estado.equalsIgnoreCase("Activo")) {
-            return "Activo";
-        }
+        UserDTO dto =
+                new UserDTO();
 
-        if (estado.equalsIgnoreCase("Inactivo")) {
-            return "Inactivo";
-        }
+        dto.setId(
+                user.getId()
+        );
 
-        return null;
-    }
+        dto.setNombres(
+                user.getNombres()
+        );
 
+        dto.setApellidos(
+                user.getApellidos()
+        );
 
-    private UserDTO convertirDTO(User user) {
+        dto.setCorreo(
+                user.getCorreo()
+        );
 
-        UserDTO dto = new UserDTO();
-
-        dto.setId(user.getId());
-        dto.setNombres(user.getNombres());
-        dto.setApellidos(user.getApellidos());
-        dto.setCorreo(user.getCorreo());
-        dto.setEstado(user.getEstado());
+        dto.setEstado(
+                user.getEstado()
+        );
 
         return dto;
     }
 
 
-    private List<UserDTO> convertirLista(List<User> users) {
+    private List<UserDTO> convertirLista(
+            List<User> users) {
 
         List<UserDTO> listaDTO =
                 new ArrayList<>();
@@ -344,5 +500,4 @@ public class UserServiceImpl implements UserService {
 
         return listaDTO;
     }
-
 }

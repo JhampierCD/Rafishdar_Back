@@ -11,52 +11,128 @@ import java.util.List;
 
 @RestController
 @CrossOrigin("*")
-@RequestMapping("/zonas-pesca")
+@RequestMapping("/rafishdar")
 public class ZonaPescaController {
+
     @Autowired
     ZonaPescaService zonaPescaService;
 
-    @GetMapping("/listar")
-    public ResponseEntity<List<ZonaPesca>> listarZonaPesca(){
-        List<ZonaPesca> foundZonasPesca = zonaPescaService.listarZonaPesca();
-        if (foundZonasPesca.isEmpty()){
-            return new ResponseEntity<>(foundZonasPesca, HttpStatus.NO_CONTENT);
+    @GetMapping("/zonas-pesca")
+    public ResponseEntity<List<ZonaPesca>> listarZonaPesca() {
+
+        List<ZonaPesca> foundZonasPesca =
+                zonaPescaService.listarZonaPesca();
+
+        if (foundZonasPesca.isEmpty()) {
+            return new ResponseEntity<>(
+                    foundZonasPesca,
+                    HttpStatus.NO_CONTENT
+            );
         }
-        return new ResponseEntity<>(foundZonasPesca, HttpStatus.OK);
+
+        return new ResponseEntity<>(
+                foundZonasPesca,
+                HttpStatus.OK
+        );
     }
 
-    @GetMapping("/buscar/{id}")
-    public ResponseEntity<ZonaPesca> buscarporId(@PathVariable("id") Long id){
-        ZonaPesca foundZonaPesca = zonaPescaService.buscarPorId(id);
-        if (foundZonaPesca == null){
-            return new ResponseEntity<>(foundZonaPesca, HttpStatus.NOT_FOUND);
+    @GetMapping("/zonas-pesca/top3/especie/{especieId}")
+    public ResponseEntity<List<ZonaPesca>> listarTop3Historicas(
+            @PathVariable Long especieId,
+            @RequestParam int mes) {
+        if (mes < 1 || mes > 12) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-        return new ResponseEntity<>(foundZonaPesca, HttpStatus.OK);
+        List<ZonaPesca> zonas =
+                zonaPescaService.listarTop3Historicas(especieId, mes);
+        if (zonas.isEmpty()) {
+            return new ResponseEntity<>(zonas, HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<>(zonas, HttpStatus.OK);
     }
 
-    @PostMapping("/insertar")
-    public ResponseEntity<ZonaPesca> insertar(@RequestBody ZonaPesca zonaPesca){
-        ZonaPesca newZonaPesca = zonaPescaService.insertar(zonaPesca);
-        if (newZonaPesca == null){
-            return new ResponseEntity<>(newZonaPesca, HttpStatus.NOT_ACCEPTABLE);
+    @GetMapping("/zonas-pesca/cercanas")
+    public ResponseEntity<List<ZonaPesca>> listarCercanasACosta(
+            @RequestParam Double distanciaMaxima) {
+        if (distanciaMaxima < 0) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-        return new ResponseEntity<>(newZonaPesca, HttpStatus.CREATED);
+        List<ZonaPesca> zonas =
+                zonaPescaService.listarCercanasACosta(distanciaMaxima);
+        if (zonas.isEmpty()) {
+            return new ResponseEntity<>(zonas, HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<>(zonas, HttpStatus.OK);
     }
 
-    @DeleteMapping("/eliminar/{id}")
-    public ResponseEntity<HttpStatus> eliminar(@PathVariable("id") Long id){
-        if (!zonaPescaService.eliminar(id)){
-            return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE);
+    @GetMapping("/zonas-pesca/{id}")
+    public ResponseEntity<ZonaPesca> buscarporId(
+            @PathVariable("id") Long id) {
+
+        ZonaPesca foundZonaPesca =
+                zonaPescaService.buscarPorId(id);
+
+        if (foundZonaPesca == null) {
+            return new ResponseEntity<>(
+                    foundZonaPesca,
+                    HttpStatus.NOT_FOUND
+            );
         }
-        return new ResponseEntity<>(HttpStatus.OK);
+
+        return new ResponseEntity<>(
+                foundZonaPesca,
+                HttpStatus.OK
+        );
     }
 
-    @PutMapping("/actualizar")
-    public ResponseEntity<ZonaPesca> actualizar(@RequestBody ZonaPesca zonaPesca){
-        if(zonaPescaService.actualizar(zonaPesca) == null){
-            return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE);
+    @PostMapping("/zonas-pesca")
+    public ResponseEntity<ZonaPesca> insertar(
+            @RequestBody ZonaPesca zonaPesca) {
+
+        ZonaPesca newZonaPesca =
+                zonaPescaService.insertar(zonaPesca);
+
+        if (newZonaPesca == null) {
+            return new ResponseEntity<>(
+                    newZonaPesca,
+                    HttpStatus.NOT_ACCEPTABLE
+            );
         }
-        return new ResponseEntity<>(zonaPesca, HttpStatus.OK);
+
+        return new ResponseEntity<>(
+                newZonaPesca,
+                HttpStatus.CREATED
+        );
+    }
+
+    @DeleteMapping("/zonas-pesca/{id}")
+    public ResponseEntity<HttpStatus> eliminar(
+            @PathVariable("id") Long id) {
+
+        if (!zonaPescaService.eliminar(id)) {
+            return new ResponseEntity<>(
+                    HttpStatus.NOT_ACCEPTABLE
+            );
+        }
+
+        return new ResponseEntity<>(
+                HttpStatus.OK
+        );
+    }
+
+    @PutMapping("/zonas-pesca")
+    public ResponseEntity<ZonaPesca> actualizar(
+            @RequestBody ZonaPesca zonaPesca) {
+
+        if (zonaPescaService.actualizar(zonaPesca) == null) {
+            return new ResponseEntity<>(
+                    HttpStatus.NOT_ACCEPTABLE
+            );
+        }
+
+        return new ResponseEntity<>(
+                zonaPesca,
+                HttpStatus.OK
+        );
     }
 }
-

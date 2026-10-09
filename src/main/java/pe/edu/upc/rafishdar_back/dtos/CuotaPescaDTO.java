@@ -16,5 +16,6 @@ public class CuotaPescaDTO {
     private Double limiteToneladasIndustrial;
     private Long especieId;
     private Long temporadaId;
+    private EspeciePezDTO especie;
 
 }

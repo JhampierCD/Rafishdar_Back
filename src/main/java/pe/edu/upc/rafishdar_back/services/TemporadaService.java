@@ -2,6 +2,7 @@ package pe.edu.upc.rafishdar_back.services;
 
 import pe.edu.upc.rafishdar_back.dtos.TemporadaDTO;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface TemporadaService {
@@ -17,5 +18,7 @@ public interface TemporadaService {
     boolean eliminar(Long id);
 
     List<TemporadaDTO> listarVigentes();
+
+    List<TemporadaDTO> buscarSuperpuestas(LocalDate inicio, LocalDate fin);
 
 }

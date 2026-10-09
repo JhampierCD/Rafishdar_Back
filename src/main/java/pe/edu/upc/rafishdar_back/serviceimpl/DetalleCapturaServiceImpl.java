@@ -35,6 +35,11 @@ public class DetalleCapturaServiceImpl implements DetalleCapturaService {
     // --- MÉTODOS BASE (CRUD) ---
 
     @Override
+    public List<DetalleCaptura> listarTodo() {
+        return capturaRepository.findAll();
+    }
+
+    @Override
     public DetalleCaptura insertarCaptura(Long idBitacora, DetalleCapturaRequestDTO request) {
         if (request.getVolumenKg() <= 0) {
             throw new BadRequestException("El volumen de captura debe ser mayor a 0");

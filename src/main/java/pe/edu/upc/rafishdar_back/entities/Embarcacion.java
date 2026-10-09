@@ -29,6 +29,7 @@ public class Embarcacion {
     @JoinColumn(name = "usuario_id")
     private User usuario;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "embarcacion")
     private List<BitacoraFaena> bitacoras;
 }
