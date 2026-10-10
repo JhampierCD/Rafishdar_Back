@@ -1,5 +1,6 @@
 package pe.edu.upc.rafishdar_back.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -22,6 +23,7 @@ public class CondicionClimatica {
     private Double velocidadVientoNudos;
     private String estadoOleaje;
 
+    @JsonIgnore
     @OneToOne
     @JoinColumn(name = "bitacora_id")
     private BitacoraFaena bitacora;

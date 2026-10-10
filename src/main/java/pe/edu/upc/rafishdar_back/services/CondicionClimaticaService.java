@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface CondicionClimaticaService {
     List<CondicionClimatica> listarTodoCondiciones();
-    CondicionClimatica insertarCondiciones(CondicionClimatica condicionClimatica);
+    CondicionClimatica insertarCondicionesPorBitacora(Long idBitacora, CondicionClimaticaDTO dto);
     CondicionClimatica actualizarCondiciones(CondicionClimatica condicionClimatica);
     CondicionClimatica buscarPorId(Long id);
     Boolean eliminarCondiciones(Long id);

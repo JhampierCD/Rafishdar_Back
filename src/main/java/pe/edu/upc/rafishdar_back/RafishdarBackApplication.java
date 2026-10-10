@@ -5,13 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import pe.edu.upc.rafishdar_back.dtos.CuotaPescaDTO;
-import pe.edu.upc.rafishdar_back.dtos.DetalleCapturaRequestDTO;
-import pe.edu.upc.rafishdar_back.dtos.EspeciePezDTO;
-import pe.edu.upc.rafishdar_back.dtos.GastoOperativoRequestDTO;
-import pe.edu.upc.rafishdar_back.dtos.TemporadaDTO;
-import pe.edu.upc.rafishdar_back.dtos.UserDTO;
-import pe.edu.upc.rafishdar_back.dtos.UserRegistroDTO;
+import pe.edu.upc.rafishdar_back.dtos.*;
 import pe.edu.upc.rafishdar_back.entities.Authority;
 import pe.edu.upc.rafishdar_back.entities.BitacoraFaena;
 import pe.edu.upc.rafishdar_back.entities.CondicionClimatica;
@@ -413,12 +407,12 @@ public class RafishdarBackApplication {
             double temperature,
             double windSpeed,
             String waveState) {
-        CondicionClimatica weather = new CondicionClimatica();
-        weather.setBitacora(trip);
-        weather.setTemperaturaCelsius(temperature);
-        weather.setVelocidadVientoNudos(windSpeed);
-        weather.setEstadoOleaje(waveState);
-        service.insertarCondiciones(weather);
+        CondicionClimaticaDTO dto = new CondicionClimaticaDTO();
+        dto.setTemperaturaCelsius(temperature);
+        dto.setVelocidadVientoNudos(windSpeed);
+        dto.setEstadoOleaje(waveState);
+        service.insertarCondicionesPorBitacora(trip.getId(), dto);
+
     }
 
     private static void agregarRecommendation(
