@@ -1,0 +1,84 @@
+$kind: http-request
+name: http://localhost:8080/rafishdar/bitacoras
+url: http://localhost:8080/rafishdar/bitacoras
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"id\": 1,\r
+
+    \    \"fechaHoraSalida\": \"2026-10-08T22:40:39.361082\",\r
+
+    \    \"fechaHoraLlegada\": \"2026-10-09T01:15:30.361082\",\r
+
+    \    \"estado\": \"Finalizada\",\r
+
+    \    \"observaciones\": \"Incidencia: peligro por red rota y lobo marino\",\r
+
+    \    \"latitudPesca\": -12.051,\r
+
+    \    \"longitudPesca\": -77.201,\r
+
+    \    \"usuario\": {\r
+
+    \        \"id\": 2,\r
+
+    \        \"nombres\": \"Carlos\",\r
+
+    \        \"apellidos\": \"Mendoza\",\r
+
+    \        \"correo\": \"carlosmendoza1@pesca.com\",\r
+
+    \        \"password\": \"$2a$10$Dwc..OPNLLTV4CCRGEkOvOtTPX9DQsokt6coAbZ/vASId2/siaKJK\",\r
+
+    \        \"estado\": \"Activo\"\r
+
+    \    },\r
+
+    \    \"embarcacion\": {\r
+
+    \        \"id\": 3,\r
+
+    \        \"nombre\": \"Mar Azul\",\r
+
+    \        \"matricula\": \"PA-98765-PM\",\r
+
+    \        \"capacidadToneladas\": 9.0\r
+
+    \    },\r
+
+    \    \"zonaPesca\": {\r
+
+    \        \"id\": 1,\r
+
+    \        \"nombreZona\": \"Zona Centro - Callao\",\r
+
+    \        \"latitud\": -12.05,\r
+
+    \        \"longitud\": -77.2,\r
+
+    \        \"distanciaCostaKm\": 8.0,\r
+
+    \        \"radioAreaKm\": 20.0\r
+
+    \    },\r
+
+    \    \"gastoOperativo\": {\r
+
+    \        \"id\": 2,\r
+
+    \        \"galonesCombustible\": 46.0,\r
+
+    \        \"costoCombustible\": 760.0,\r
+
+    \        \"costoHieloInsumos\": 180.0\r
+
+    \    }\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{json_web_token_01ii}}"
+order: 7000

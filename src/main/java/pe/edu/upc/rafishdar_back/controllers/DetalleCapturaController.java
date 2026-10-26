@@ -21,6 +21,7 @@ public class DetalleCapturaController {
         this.capturaService = capturaService;
     }
 
+    // http://localhost:8080/rafishdar/detalles-captura
     @GetMapping("/detalles-captura")
     public ResponseEntity<List<DetalleCaptura>> listarTodo() {
         List<DetalleCaptura> capturas = capturaService.listarTodo();

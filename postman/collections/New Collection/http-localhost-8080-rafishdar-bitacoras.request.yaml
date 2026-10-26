@@ -1,0 +1,5 @@
+$kind: http-request
+name: http://localhost:8080/rafishdar/bitacoras
+url: ""
+method: GET
+order: 6000

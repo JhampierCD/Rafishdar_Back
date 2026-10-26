@@ -6,9 +6,9 @@ body:
   type: json
   content: "{\r
 
-    \  \"correo\": \"admin@rafishdar.com\",\r
+    \  \"correo\": \"carlos@pesca.com\",\r
 
-    \  \"password\": \"Admin123\"\r
+    \  \"password\": \"Pesca123\"\r
 
     }"
 order: 1000

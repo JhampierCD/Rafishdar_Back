@@ -17,6 +17,7 @@ public class EmbarcacionController {
     @Autowired
     EmbarcacionService embarcacionService;
 
+    // http://localhost:8080/rafishdar/embarcaciones
     @GetMapping("/embarcaciones")
     public ResponseEntity<List<Embarcacion>> listarEmbarcacion() {
 
@@ -36,6 +37,7 @@ public class EmbarcacionController {
         );
     }
 
+    // http://localhost:8080/rafishdar/embarcaciones/usuario/1
     @GetMapping("/embarcaciones/usuario/{usuarioId}")
     public ResponseEntity<List<Embarcacion>> listarPorUsuario(
             @PathVariable Long usuarioId) {
@@ -47,6 +49,7 @@ public class EmbarcacionController {
         return new ResponseEntity<>(embarcaciones, HttpStatus.OK);
     }
 
+    // http://localhost:8080/rafishdar/embarcaciones/matricula/{matricula}/existe
     @GetMapping("/embarcaciones/matricula/{matricula}/existe")
     public ResponseEntity<Boolean> existeMatricula(
             @PathVariable String matricula) {
@@ -59,6 +62,7 @@ public class EmbarcacionController {
         );
     }
 
+    // http://localhost:8080/rafishdar/embarcaciones/1
     @GetMapping("/embarcaciones/{id}")
     public ResponseEntity<Embarcacion> buscarporId(
             @PathVariable("id") Long id) {
@@ -79,6 +83,7 @@ public class EmbarcacionController {
         );
     }
 
+    // http://localhost:8080/rafishdar/embarcaciones
     @PostMapping("/embarcaciones")
     public ResponseEntity<Embarcacion> insertar(
             @RequestBody Embarcacion embarcacion) {
@@ -99,6 +104,7 @@ public class EmbarcacionController {
         );
     }
 
+    // http://localhost:8080/rafishdar/embarcaciones/1
     @DeleteMapping("/embarcaciones/{id}")
     public ResponseEntity<HttpStatus> eliminar(
             @PathVariable("id") Long id) {
@@ -114,6 +120,7 @@ public class EmbarcacionController {
         );
     }
 
+    // http://localhost:8080/rafishdar/embarcaciones
     @PutMapping("/embarcaciones")
     public ResponseEntity<Embarcacion> actualizar(
             @RequestBody Embarcacion embarcacion) {

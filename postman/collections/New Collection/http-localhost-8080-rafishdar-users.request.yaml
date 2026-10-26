@@ -1,0 +1,9 @@
+$kind: http-request
+name: http://localhost:8080/rafishdar/users
+url: http://localhost:8080/rafishdar/users
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{json_web_token_01ii}}"
+order: 2000
