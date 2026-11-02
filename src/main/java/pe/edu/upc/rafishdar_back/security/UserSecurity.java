@@ -36,7 +36,7 @@ public class UserSecurity
     @Override
     public String getUsername() {
 
-        return user.getCorreo();
+        return user.getEmail();
     }
 
     @Override
@@ -60,7 +60,6 @@ public class UserSecurity
     @Override
     public boolean isEnabled() {
 
-        return user.getEstado()
-                .equalsIgnoreCase("Activo");
+        return user.getEstado();
     }
 }

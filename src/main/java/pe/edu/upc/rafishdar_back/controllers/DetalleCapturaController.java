@@ -1,11 +1,13 @@
 package pe.edu.upc.rafishdar_back.controllers;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import pe.edu.upc.rafishdar_back.dtos.detalle_captura.DetalleCapturaDTO;
 import pe.edu.upc.rafishdar_back.entities.DetalleCaptura;
-import pe.edu.upc.rafishdar_back.dtos.DetalleCapturaRequestDTO;
+import pe.edu.upc.rafishdar_back.dtos.detalle_captura.DetalleCapturaRequestDTO;
 import pe.edu.upc.rafishdar_back.services.DetalleCapturaService;
 
 import java.time.LocalDateTime;
@@ -15,16 +17,13 @@ import java.util.List;
 @RequestMapping("/rafishdar")
 public class DetalleCapturaController {
 
-    private final DetalleCapturaService capturaService;
-
-    public DetalleCapturaController(DetalleCapturaService capturaService) {
-        this.capturaService = capturaService;
-    }
+    @Autowired
+    DetalleCapturaService capturaService;
 
     // http://localhost:8080/rafishdar/detalles-captura
     @GetMapping("/detalles-captura")
-    public ResponseEntity<List<DetalleCaptura>> listarTodo() {
-        List<DetalleCaptura> capturas = capturaService.listarTodo();
+    public ResponseEntity<List<DetalleCapturaDTO>> listarTodo() {
+        List<DetalleCapturaDTO> capturas = capturaService.listarTodoDTO();
         if (capturas.isEmpty()) {
             return new ResponseEntity<>(capturas, HttpStatus.NO_CONTENT);
         }
@@ -81,10 +80,10 @@ public class DetalleCapturaController {
 
     // http://localhost:8080/rafishdar/detalles-captura/bitacoras/1
     @GetMapping("/detalles-captura/bitacoras/{idBitacora}")
-    public ResponseEntity<List<DetalleCaptura>> listarPorBitacora(
+    public ResponseEntity<List<DetalleCapturaDTO>> listarPorBitacora(
             @PathVariable("idBitacora") Long idBitacora) {
 
-        List<DetalleCaptura> foundCapturas =
+        List<DetalleCapturaDTO> foundCapturas =
                 capturaService.listarCapturasPorBitacora(
                         idBitacora
                 );

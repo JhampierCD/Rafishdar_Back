@@ -10,8 +10,7 @@ import java.util.List;
 
 public interface TemporadaRepository extends JpaRepository<Temporada, Long> {
 
-    List<Temporada>
-    findByFechaInicioLessThanEqualAndFechaFinGreaterThanEqual(
+    Temporada findByFechaInicioLessThanEqualAndFechaFinGreaterThanEqual(
             LocalDate fechaInicio,
             LocalDate fechaFin
     );

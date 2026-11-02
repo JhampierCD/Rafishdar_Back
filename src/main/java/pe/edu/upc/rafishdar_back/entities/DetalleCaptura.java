@@ -23,7 +23,7 @@ public class DetalleCaptura {
     @ManyToOne
     @JsonIgnore
     @JoinColumn(name = "bitacora_id")
-    private BitacoraFaena bitacora;
+    private Bitacora bitacora;
 
     @ManyToOne
     @JsonIgnore

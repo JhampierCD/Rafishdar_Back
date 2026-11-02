@@ -3,10 +3,10 @@ package pe.edu.upc.rafishdar_back.serviceimpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import pe.edu.upc.rafishdar_back.dtos.UserActualizarDTO;
-import pe.edu.upc.rafishdar_back.dtos.UserCambioPasswordDTO;
-import pe.edu.upc.rafishdar_back.dtos.UserDTO;
-import pe.edu.upc.rafishdar_back.dtos.UserRegistroDTO;
+import pe.edu.upc.rafishdar_back.dtos.user.UserActualizarDTO;
+import pe.edu.upc.rafishdar_back.dtos.user.UserCambioPasswordDTO;
+import pe.edu.upc.rafishdar_back.dtos.user.UserDTO;
+import pe.edu.upc.rafishdar_back.dtos.user.UserRegistroDTO;
 import pe.edu.upc.rafishdar_back.entities.Authority;
 import pe.edu.upc.rafishdar_back.entities.User;
 import pe.edu.upc.rafishdar_back.repositories.AuthorityRepository;
@@ -103,7 +103,7 @@ public class UserServiceImpl
                         .toLowerCase();
 
         if (userRepository
-                .existsByCorreoIgnoreCase(correo)) {
+                .existsByEmailIgnoreCase(correo)) {
 
             return null;
         }
@@ -133,7 +133,7 @@ public class UserServiceImpl
                         .trim()
         );
 
-        user.setCorreo(correo);
+        user.setEmail(correo);
 
 
         user.setPassword(
@@ -144,7 +144,7 @@ public class UserServiceImpl
         );
 
 
-        user.setEstado("Activo");
+        user.setEstado(true);
 
 
         List<Authority> authorities =
@@ -198,7 +198,7 @@ public class UserServiceImpl
 
         User userConMismoCorreo =
                 userRepository
-                        .findByCorreoIgnoreCase(
+                        .findByEmailIgnoreCase(
                                 correo
                         );
 
@@ -224,7 +224,7 @@ public class UserServiceImpl
                         .trim()
         );
 
-        user.setCorreo(correo);
+        user.setEmail(correo);
 
 
         User userActualizado =
@@ -238,15 +238,15 @@ public class UserServiceImpl
 
     @Override
     public UserDTO eliminarLogico(Long id) {
-        return cambiarEstado(id, "Inactivo");
+        return cambiarEstado(id, false);
     }
 
     @Override
     public UserDTO activar(Long id) {
-        return cambiarEstado(id, "Activo");
+        return cambiarEstado(id, true);
     }
 
-    private UserDTO cambiarEstado(Long id, String estado) {
+    private UserDTO cambiarEstado(Long id, Boolean estado) {
         if (id == null) {
             return null;
         }
@@ -474,7 +474,7 @@ public class UserServiceImpl
         );
 
         dto.setCorreo(
-                user.getCorreo()
+                user.getEmail()
         );
 
         dto.setEstado(

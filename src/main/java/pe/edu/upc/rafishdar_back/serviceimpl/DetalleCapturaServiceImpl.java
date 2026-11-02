@@ -4,15 +4,12 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import pe.edu.upc.rafishdar_back.dtos.DetalleCapturaRequestDTO;
-import pe.edu.upc.rafishdar_back.entities.BitacoraFaena;
-import pe.edu.upc.rafishdar_back.entities.DetalleCaptura;
-import pe.edu.upc.rafishdar_back.entities.EspeciePez;
+import pe.edu.upc.rafishdar_back.dtos.detalle_captura.DetalleCapturaDTO;
+import pe.edu.upc.rafishdar_back.dtos.detalle_captura.DetalleCapturaRequestDTO;
+import pe.edu.upc.rafishdar_back.entities.*;
 import pe.edu.upc.rafishdar_back.exceptions.BadRequestException;
 import pe.edu.upc.rafishdar_back.exceptions.ResourceNotFoundException;
-import pe.edu.upc.rafishdar_back.repositories.BitacoraFaenaRepository;
-import pe.edu.upc.rafishdar_back.repositories.DetalleCapturaRepository;
-import pe.edu.upc.rafishdar_back.repositories.EspeciePezRepository;
+import pe.edu.upc.rafishdar_back.repositories.*;
 import pe.edu.upc.rafishdar_back.services.DetalleCapturaService;
 
 import java.time.LocalDateTime;
@@ -27,10 +24,17 @@ public class DetalleCapturaServiceImpl implements DetalleCapturaService {
     private DetalleCapturaRepository capturaRepository;
 
     @Autowired
-    private BitacoraFaenaRepository bitacoraRepository;
+    private BitacoraRepository bitacoraRepository;
 
     @Autowired
     private EspeciePezRepository especieRepository;
+
+    @Autowired
+    private CuotaPescaRepository cuotaPescaRepository;
+
+    @Autowired
+    private TemporadaRepository temporadaRepository;
+
 
     // --- MÉTODOS BASE (CRUD) ---
 
@@ -40,14 +44,64 @@ public class DetalleCapturaServiceImpl implements DetalleCapturaService {
     }
 
     @Override
-    public DetalleCaptura insertarCaptura(Long idBitacora, DetalleCapturaRequestDTO request) {
+    public List<DetalleCapturaDTO> listarTodoDTO() {
+        List<DetalleCaptura> capturas = capturaRepository.findAll();
+        List<DetalleCapturaDTO> capturasDTO = new ArrayList<>();
+
+        for (DetalleCaptura captura : capturas) {
+            DetalleCapturaDTO dto = new DetalleCapturaDTO();
+
+            dto.setId(captura.getId());
+            dto.setVolumenKg(captura.getVolumenKg());
+            dto.setEspecieId(captura.getEspecie().getId());
+            dto.setBitacoraId(captura.getBitacora().getId());
+            capturasDTO.add(dto);
+        }
+
+        return capturasDTO;
+    }
+
+    @Override
+    public List<DetalleCapturaDTO> listarCapturasPorBitacora(Long idBitacora) {
+        List<DetalleCaptura> capturas = capturaRepository.findByBitacoraId(idBitacora);
+        List<DetalleCapturaDTO> capturasDTO = new ArrayList<>();
+
+        for (DetalleCaptura captura : capturas) {
+            DetalleCapturaDTO dto = new DetalleCapturaDTO();
+
+            dto.setId(captura.getId());
+            dto.setVolumenKg(captura.getVolumenKg());
+            dto.setEspecieId(captura.getEspecie().getId());
+            dto.setBitacoraId(captura.getBitacora().getId());
+            capturasDTO.add(dto);
+        }
+
+        return capturasDTO;
+    }
+
+    @Override
+    public DetalleCaptura insertarCaptura(Long bitacoraId, DetalleCapturaRequestDTO request) {
         if (request.getVolumenKg() <= 0) {
             throw new BadRequestException("El volumen de captura debe ser mayor a 0");
         }
-        BitacoraFaena bitacora = bitacoraRepository.findById(idBitacora)
+
+        Bitacora bitacora = bitacoraRepository.findById(bitacoraId)
                 .orElseThrow(() -> new ResourceNotFoundException("Bitácora no encontrada"));
-        EspeciePez especie = especieRepository.findById(request.getIdEspecie())
+        EspeciePez especie = especieRepository.findById(request.getEspecieId())
                 .orElseThrow(() -> new ResourceNotFoundException("Especie no encontrada"));
+        Temporada temporada = temporadaRepository.findByFechaInicioLessThanEqualAndFechaFinGreaterThanEqual(
+                bitacora.getFechaHoraRegistro().toLocalDate(),
+                bitacora.getFechaHoraRegistro().toLocalDate()
+        );
+
+        if (temporada == null){
+            throw new ResourceNotFoundException("Temporada no encontrada");
+        }
+
+        if (!validarVolumenMenorACuota(bitacora.getFaena().getUsuario().getId(),
+                especie.getId(), request.getVolumenKg(), temporada)) {
+            throw new BadRequestException("El volumen de captura excede la cuota permitida para esta especie en la temporada actual");
+        }
 
         DetalleCaptura detalle = new DetalleCaptura();
         detalle.setBitacora(bitacora);
@@ -62,8 +116,24 @@ public class DetalleCapturaServiceImpl implements DetalleCapturaService {
         if (nuevoVolumen <= 0) {
             throw new BadRequestException("El volumen debe ser mayor a 0");
         }
+
         DetalleCaptura detalle = capturaRepository.findById(idDetalle)
                 .orElseThrow(() -> new ResourceNotFoundException("Detalle de captura no encontrado"));
+
+        Temporada temporada = temporadaRepository.findByFechaInicioLessThanEqualAndFechaFinGreaterThanEqual(
+                detalle.getBitacora().getFechaHoraRegistro().toLocalDate(),
+                detalle.getBitacora().getFechaHoraRegistro().toLocalDate()
+        );
+
+        if (temporada == null){
+            throw new ResourceNotFoundException("Temporada no encontrada");
+        }
+
+        if (!validarVolumenMenorACuota(detalle.getBitacora().getFaena().getUsuario().getId(),
+                detalle.getEspecie().getId(), nuevoVolumen, temporada)) {
+            throw new BadRequestException("El volumen de captura excede la cuota permitida para esta especie en la temporada actual");
+        }
+
         detalle.setVolumenKg(nuevoVolumen);
         return capturaRepository.save(detalle);
     }
@@ -77,8 +147,17 @@ public class DetalleCapturaServiceImpl implements DetalleCapturaService {
     }
 
     @Override
-    public List<DetalleCaptura> listarCapturasPorBitacora(Long idBitacora) {
-        return capturaRepository.findByBitacoraId(idBitacora);
+    public Boolean validarVolumenMenorACuota(Long usuarioId, Long especieId, Double volumenActual, Temporada temporada) {
+        Double volumenHistoricoKg = capturaRepository.calcularVolumenHistoricoKg(usuarioId, especieId,
+                temporada.getFechaInicio().atTime(0,0,0), temporada.getFechaFin().atTime(23,59,59));
+
+        Double volumenTotalProyectado = volumenHistoricoKg + volumenActual;
+
+        CuotaPesca cuotaPesca = cuotaPescaRepository.findByEspecieIdAndTemporadaId(especieId, temporada.getId());
+
+        Double limiteKg = cuotaPesca.getLimiteToneladasIndustrial() * 1000.0; // Convertir toneladas a kilogramos
+
+        return volumenTotalProyectado <= limiteKg;
     }
 
     // --- MÉTODOS ANALÍTICOS ---
@@ -101,12 +180,11 @@ public class DetalleCapturaServiceImpl implements DetalleCapturaService {
     public List<Long> obtenerTopZonasParaEspecieEnMesCorriente(Long idEspecie) {
         int mesActual = LocalDateTime.now().getMonthValue();
         // Top 3 de zonas usando PageRequest
-        List<Object[]> resultados = capturaRepository.encontrarMejoresZonasPorEspecieYMes(idEspecie, mesActual, PageRequest.of(0, 3));
+        List<DetalleCapturaDTO> resultados = capturaRepository.encontrarMejoresZonasPorEspecieYMes(idEspecie, mesActual, PageRequest.of(0, 3));
 
         List<Long> zonasIds = new ArrayList<>();
-        for (Object[] fila : resultados) {
-            // fila[0] corresponde a b.zona.id según el query del repository
-            zonasIds.add((Long) fila[0]);
+        for (DetalleCapturaDTO fila : resultados) {
+            zonasIds.add(fila.getId());
         }
         return zonasIds;
     }
@@ -117,8 +195,8 @@ public class DetalleCapturaServiceImpl implements DetalleCapturaService {
         if (volumenVeda == null || volumenVeda == 0.0) return 0.0;
 
         // Calculamos el volumen total de esa misma faena (reutilizando metodo o logica directa)
-        List<DetalleCaptura> capturas = listarCapturasPorBitacora(idBitacora);
-        Double volumenTotal = capturas.stream().mapToDouble(DetalleCaptura::getVolumenKg).sum();
+        List<DetalleCapturaDTO> capturas = listarCapturasPorBitacora(idBitacora);
+        Double volumenTotal = capturas.stream().mapToDouble(DetalleCapturaDTO::getVolumenKg).sum();
 
         if (volumenTotal == 0.0) return 0.0;
 

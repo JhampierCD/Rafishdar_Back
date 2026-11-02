@@ -24,10 +24,9 @@ public class User {
     private String apellidos;
 
     @Column(nullable = false, unique = true)
-    private String correo;
-
+    private String email;
     private String password;
-    private String estado;
+    private Boolean estado;
 
     @JsonIgnore
     @ToString.Exclude
@@ -37,7 +36,7 @@ public class User {
     @JsonIgnore
     @ToString.Exclude
     @OneToMany(mappedBy = "usuario")
-    private List<BitacoraFaena> bitacoras;
+    private List<Faena> faenas;
 
     @JsonIgnore
     @ToString.Exclude

@@ -3,9 +3,9 @@ package pe.edu.upc.rafishdar_back.serviceimpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pe.edu.upc.rafishdar_back.dtos.CondicionClimaticaDTO;
-import pe.edu.upc.rafishdar_back.entities.BitacoraFaena;
+import pe.edu.upc.rafishdar_back.entities.Bitacora;
 import pe.edu.upc.rafishdar_back.entities.CondicionClimatica;
-import pe.edu.upc.rafishdar_back.repositories.BitacoraFaenaRepository;
+import pe.edu.upc.rafishdar_back.repositories.FaenaRepository;
 import pe.edu.upc.rafishdar_back.repositories.CondicionClimaticaRepository;
 import pe.edu.upc.rafishdar_back.services.CondicionClimaticaService;
 
@@ -18,7 +18,7 @@ public class CondicionClimaticaServiceImpl implements CondicionClimaticaService 
     private CondicionClimaticaRepository condicionClimaticaRepository;
 
     @Autowired
-    private BitacoraFaenaRepository bitacoraFaenaRepository;
+    private FaenaRepository bitacoraFaenaRepository;
 
     @Override
     public List<CondicionClimatica> listarTodoCondiciones() {
@@ -27,7 +27,7 @@ public class CondicionClimaticaServiceImpl implements CondicionClimaticaService 
 
     @Override
     public CondicionClimatica insertarCondicionesPorBitacora(Long idBitacora, CondicionClimaticaDTO dto) {
-        BitacoraFaena bitacora = bitacoraFaenaRepository.findById(idBitacora)
+        Bitacora bitacora = bitacoraFaenaRepository.findById(idBitacora)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "La bitácora con id " + idBitacora + " no existe"
                 ));

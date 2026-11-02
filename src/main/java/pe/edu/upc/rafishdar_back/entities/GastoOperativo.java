@@ -24,7 +24,7 @@ public class GastoOperativo {
 
     @OneToOne
     @JsonIgnore
-    @JoinColumn(name = "bitacora_id")
-    private BitacoraFaena bitacora;
+    @JoinColumn(name = "faena_id")
+    private Faena faena;
 
 }

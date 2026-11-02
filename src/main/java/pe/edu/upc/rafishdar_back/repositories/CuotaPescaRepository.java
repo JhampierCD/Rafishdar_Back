@@ -11,17 +11,14 @@ import java.util.Optional;
 
 public interface CuotaPescaRepository extends JpaRepository<CuotaPesca, Long> {
 
-    CuotaPesca findByEspecie_IdAndTemporada_Id(
-            Long especieId,
-            Long temporadaId
-    );
+    CuotaPesca findByEspecieIdAndTemporadaId(Long especieId, Long temporadaId);
 
-    @Query("SELECT c FROM CuotaPesca c " +
-            "WHERE c.especie.id = :especieId AND c.temporada.id = :temporadaId")
-    Optional<CuotaPesca> findByEspecieIdAndTemporadaId(
-            @Param("especieId") Long especieId,
-            @Param("temporadaId") Long temporadaId
-    );
+//    @Query("SELECT c FROM CuotaPesca c " +
+//            "WHERE c.especie.id = :especieId AND c.temporada.id = :temporadaId")
+//    Optional<CuotaPesca> findByEspecieIdAndTemporadaId(
+//            @Param("especieId") Long especieId,
+//            @Param("temporadaId") Long temporadaId
+//    );
 
     List<CuotaPesca> findByEspecie_Id(Long especieId);
 

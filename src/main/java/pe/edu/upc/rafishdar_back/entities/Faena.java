@@ -15,19 +15,17 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 
-public class BitacoraFaena {
-
+public class Faena {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private LocalDateTime fechaHoraSalida;
     private LocalDateTime fechaHoraLlegada;
-    private String estado;
-    private String observaciones;
+    private String estado; // Programada, En curso, Finalizada, Cancelada
 
-    private Double latitudPesca;
-    private Double longitudPesca;
+    @OneToMany(mappedBy = "faena", fetch = FetchType.EAGER)
+    private List<Bitacora> bitacoras;
 
     @ManyToOne
     @JoinColumn(name = "usuario_id")
@@ -37,24 +35,11 @@ public class BitacoraFaena {
     @JoinColumn(name = "embarcacion_id")
     private Embarcacion embarcacion;
 
-    @ManyToOne
-    @JoinColumn(name = "zona_pesca_id")
-    private ZonaPesca zonaPesca;
-
-    @JsonIgnore
-    @OneToMany(mappedBy = "bitacora", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-    private List<DetalleCaptura> detallesCaptura;
-
-    @OneToOne(mappedBy = "bitacora")
+    @OneToOne(mappedBy = "faena")
     @JsonIgnore
     private GastoOperativo gastoOperativo;
 
-    @OneToOne(mappedBy = "bitacora")
-    @JsonIgnore
-    private CondicionClimatica condicionClimatica;
-
-    @OneToOne(mappedBy = "bitacora")
+    @OneToOne(mappedBy = "faena")
     @JsonIgnore
     private RecomendacionIA recomendacionIA;
-
 }

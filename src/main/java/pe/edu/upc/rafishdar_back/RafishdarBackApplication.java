@@ -6,17 +6,19 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import pe.edu.upc.rafishdar_back.dtos.*;
+import pe.edu.upc.rafishdar_back.dtos.detalle_captura.DetalleCapturaRequestDTO;
+import pe.edu.upc.rafishdar_back.dtos.user.UserDTO;
+import pe.edu.upc.rafishdar_back.dtos.user.UserRegistroDTO;
 import pe.edu.upc.rafishdar_back.entities.Authority;
-import pe.edu.upc.rafishdar_back.entities.BitacoraFaena;
-import pe.edu.upc.rafishdar_back.entities.CondicionClimatica;
+import pe.edu.upc.rafishdar_back.entities.Bitacora;
 import pe.edu.upc.rafishdar_back.entities.Embarcacion;
 import pe.edu.upc.rafishdar_back.entities.RecomendacionIA;
 import pe.edu.upc.rafishdar_back.entities.User;
 import pe.edu.upc.rafishdar_back.entities.ZonaPesca;
-import pe.edu.upc.rafishdar_back.repositories.BitacoraFaenaRepository;
+import pe.edu.upc.rafishdar_back.repositories.FaenaRepository;
 import pe.edu.upc.rafishdar_back.repositories.UserRepository;
 import pe.edu.upc.rafishdar_back.services.AuthorityService;
-import pe.edu.upc.rafishdar_back.services.BitacoraFaenaService;
+import pe.edu.upc.rafishdar_back.services.FaenaService;
 import pe.edu.upc.rafishdar_back.services.CondicionClimaticaService;
 import pe.edu.upc.rafishdar_back.services.CuotaPescaService;
 import pe.edu.upc.rafishdar_back.services.DetalleCapturaService;
@@ -44,8 +46,8 @@ public class RafishdarBackApplication {
     @Bean
     public CommandLineRunner startConfiguration(
             AuthorityService authorityService,
-            BitacoraFaenaService bitacoraService,
-            BitacoraFaenaRepository bitacoraRepository,
+            FaenaService bitacoraService,
+            FaenaRepository bitacoraRepository,
             CondicionClimaticaService condicionService,
             CuotaPescaService cuotaPescaService,
             DetalleCapturaService detalleCapturaService,
@@ -161,19 +163,19 @@ public class RafishdarBackApplication {
             crearCuotaPesca(cuotaPescaService, bonito, futureSeason, 900.0);
 
             LocalDateTime now = LocalDateTime.now();
-            BitacoraFaena callaoTrip = crearBitacoraFaena(
+            Bitacora callaoTrip = crearBitacoraFaena(
                     bitacoraService, fisherman, boatOne, callao,
                     now.minusDays(1)
             );
-            BitacoraFaena huachoTrip = crearBitacoraFaena(
+            Bitacora huachoTrip = crearBitacoraFaena(
                     bitacoraService, fisherman, boatTwo, huacho,
                     now.minusDays(2)
             );
-            BitacoraFaena piscoTrip = crearBitacoraFaena(
+            Bitacora piscoTrip = crearBitacoraFaena(
                     bitacoraService, secondFisherman, boatThree, pisco,
                     now.minusDays(3)
             );
-            BitacoraFaena activeTrip = crearBitacoraFaena(
+            Bitacora activeTrip = crearBitacoraFaena(
                     bitacoraService, fisherman, boatOne, pisco,
                     now.plusHours(1)
             );
@@ -201,7 +203,7 @@ public class RafishdarBackApplication {
                     "Captura abundante en condiciones seguras"
             );
             bitacoraService.cambiarEstadoAEnCurso(activeTrip.getId());
-            BitacoraFaena activeChanges = new BitacoraFaena();
+            Bitacora activeChanges = new Bitacora();
             activeChanges.setLatitudPesca(-13.7100);
             activeChanges.setLongitudPesca(-76.3100);
             activeChanges.setObservaciones("Faena en curso para pruebas de actualización");
@@ -344,13 +346,13 @@ public class RafishdarBackApplication {
         requireCreated(service.insertar(quota), "cuota de " + species.getNombreComun());
     }
 
-    private static BitacoraFaena crearBitacoraFaena(
-            BitacoraFaenaService service,
+    private static Bitacora crearBitacoraFaena(
+            FaenaService service,
             User owner,
             Embarcacion boat,
             ZonaPesca zone,
             LocalDateTime departure) {
-        BitacoraFaena trip = new BitacoraFaena();
+        Bitacora trip = new Bitacora();
         trip.setUsuario(owner);
         trip.setEmbarcacion(boat);
         trip.setZonaPesca(zone);
@@ -359,9 +361,9 @@ public class RafishdarBackApplication {
     }
 
     private static void terminarBitacoraFaena(
-            BitacoraFaenaService service,
-            BitacoraFaenaRepository repository,
-            BitacoraFaena trip,
+            FaenaService service,
+            FaenaRepository repository,
+            Bitacora trip,
             LocalDateTime departure,
             LocalDateTime arrival,
             double latitude,
@@ -369,7 +371,7 @@ public class RafishdarBackApplication {
             String observations) {
         service.cambiarEstadoAEnCurso(trip.getId());
         service.terminarBitacora(trip.getId(), observations);
-        BitacoraFaena finished = service.buscarBitacoraPorId(trip.getId());
+        Bitacora finished = service.buscarBitacoraPorId(trip.getId());
         finished.setFechaHoraSalida(departure);
         finished.setFechaHoraLlegada(arrival);
         finished.setLatitudPesca(latitude);
@@ -379,7 +381,7 @@ public class RafishdarBackApplication {
 
     private static void agregarCaptura(
             DetalleCapturaService service,
-            BitacoraFaena trip,
+            Bitacora trip,
             EspeciePezDTO species,
             double volumeKg) {
         DetalleCapturaRequestDTO capture = new DetalleCapturaRequestDTO();
@@ -390,7 +392,7 @@ public class RafishdarBackApplication {
 
     private static void agregarGastos(
             GastoOperativoService service,
-            BitacoraFaena trip,
+            Bitacora trip,
             double fuelGallons,
             double fuelCost,
             double suppliesCost) {
@@ -403,7 +405,7 @@ public class RafishdarBackApplication {
 
     private static void agregarCondicionClimatica(
             CondicionClimaticaService service,
-            BitacoraFaena trip,
+            Bitacora trip,
             double temperature,
             double windSpeed,
             String waveState) {
@@ -417,7 +419,7 @@ public class RafishdarBackApplication {
 
     private static void agregarRecommendation(
             RecomendacionIAService service,
-            BitacoraFaena trip,
+            Bitacora trip,
             String risk,
             String analysis,
             LocalDateTime generatedAt) {

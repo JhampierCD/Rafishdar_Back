@@ -2,10 +2,10 @@ package pe.edu.upc.rafishdar_back.serviceimpl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import pe.edu.upc.rafishdar_back.entities.BitacoraFaena;
+import pe.edu.upc.rafishdar_back.entities.Bitacora;
 import pe.edu.upc.rafishdar_back.entities.CondicionClimatica;
 import pe.edu.upc.rafishdar_back.entities.RecomendacionIA;
-import pe.edu.upc.rafishdar_back.repositories.BitacoraFaenaRepository;
+import pe.edu.upc.rafishdar_back.repositories.FaenaRepository;
 import pe.edu.upc.rafishdar_back.repositories.CondicionClimaticaRepository;
 import pe.edu.upc.rafishdar_back.repositories.RecomendacionIARepository;
 import pe.edu.upc.rafishdar_back.services.RecomendacionIAService;
@@ -21,7 +21,7 @@ public class RecomendacionIAServiceImpl implements RecomendacionIAService {
     private static final Set<String> NIVELES_VALIDOS = Set.of("BAJO", "MEDIO", "ALTO");
 
     @Autowired private RecomendacionIARepository recomendacionIARepository;
-    @Autowired private BitacoraFaenaRepository bitacoraFaenaRepository;
+    @Autowired private FaenaRepository bitacoraFaenaRepository;
     @Autowired private CondicionClimaticaRepository condicionClimaticaRepository;
 
     @Override
@@ -88,7 +88,7 @@ public class RecomendacionIAServiceImpl implements RecomendacionIAService {
             );
         }
 
-        BitacoraFaena bitacora = obtenerBitacoraValidada(bitacoraId, usuarioId);
+        Bitacora bitacora = obtenerBitacoraValidada(bitacoraId, usuarioId);
         String prompt = construirPrompt(bitacora);
 
         // --- Llamada al servicio de IA ---
@@ -120,7 +120,7 @@ public class RecomendacionIAServiceImpl implements RecomendacionIAService {
      */
     @Override
     public RecomendacionIA regenerarParaBitacora(Long bitacoraId, Long usuarioId) {
-        BitacoraFaena bitacora = obtenerBitacoraValidada(bitacoraId, usuarioId);
+        Bitacora bitacora = obtenerBitacoraValidada(bitacoraId, usuarioId);
         String prompt = construirPrompt(bitacora);
 
         // --- Llamada al servicio de IA (mismo contrato que generarParaBitacora) ---
@@ -217,8 +217,8 @@ public class RecomendacionIAServiceImpl implements RecomendacionIAService {
      * BN-03 aplicado a IA: valida que la bitácora exista y pertenezca al usuario.
      * Lanza excepción controlada si no se cumplen las condiciones.
      */
-    private BitacoraFaena obtenerBitacoraValidada(Long bitacoraId, Long usuarioId) {
-        BitacoraFaena bitacora = bitacoraFaenaRepository
+    private Bitacora obtenerBitacoraValidada(Long bitacoraId, Long usuarioId) {
+        Bitacora bitacora = bitacoraFaenaRepository
                 .findById(bitacoraId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "La bitácora con id " + bitacoraId + " no existe"
@@ -237,7 +237,7 @@ public class RecomendacionIAServiceImpl implements RecomendacionIAService {
      * BN-25: construye el prompt para la IA con los datos disponibles.
      * No inventa valores. Documenta explícitamente qué información falta.
      */
-    private String construirPrompt(BitacoraFaena bitacora) {
+    private String construirPrompt(Bitacora bitacora) {
         StringBuilder sb = new StringBuilder();
         sb.append("Faena ID: ").append(bitacora.getId()).append("\n");
 
