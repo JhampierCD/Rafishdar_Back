@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import pe.edu.upc.rafishdar_back.dtos.CuotaPescaDTO;
+import pe.edu.upc.rafishdar_back.dtos.cuota_pesca.CuotaPescaDTO;
 import pe.edu.upc.rafishdar_back.services.CuotaPescaService;
 
 import java.util.List;

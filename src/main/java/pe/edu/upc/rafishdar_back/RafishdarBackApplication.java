@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import pe.edu.upc.rafishdar_back.dtos.*;
+import pe.edu.upc.rafishdar_back.dtos.cuota_pesca.CuotaPescaDTO;
 import pe.edu.upc.rafishdar_back.dtos.detalle_captura.DetalleCapturaRequestDTO;
 import pe.edu.upc.rafishdar_back.dtos.user.UserDTO;
 import pe.edu.upc.rafishdar_back.dtos.user.UserRegistroDTO;
