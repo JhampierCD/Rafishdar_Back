@@ -4,11 +4,11 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pe.edu.upc.rafishdar_back.dtos.GastoOperativoRequestDTO;
-import pe.edu.upc.rafishdar_back.entities.BitacoraFaena;
+import pe.edu.upc.rafishdar_back.entities.Bitacora;
 import pe.edu.upc.rafishdar_back.entities.GastoOperativo;
 import pe.edu.upc.rafishdar_back.exceptions.ConflictException;
 import pe.edu.upc.rafishdar_back.exceptions.ResourceNotFoundException;
-import pe.edu.upc.rafishdar_back.repositories.BitacoraFaenaRepository;
+import pe.edu.upc.rafishdar_back.repositories.FaenaRepository;
 import pe.edu.upc.rafishdar_back.repositories.GastoOperativoRepository;
 import pe.edu.upc.rafishdar_back.services.GastoOperativoService;
 
@@ -23,7 +23,7 @@ public class GastoOperativoServiceImpl implements GastoOperativoService {
     private GastoOperativoRepository gastoRepository;
 
     @Autowired
-    private BitacoraFaenaRepository bitacoraRepository;
+    private FaenaRepository bitacoraRepository;
 
     // --- MÉTODOS BASE (CRUD) ---
 
@@ -39,7 +39,7 @@ public class GastoOperativoServiceImpl implements GastoOperativoService {
             throw new ConflictException("Esta bitácora ya tiene gastos registrados. Utilice el método de actualización.");
         }
 
-        BitacoraFaena bitacora = bitacoraRepository.findById(idBitacora)
+        Bitacora bitacora = bitacoraRepository.findById(idBitacora)
                 .orElseThrow(() -> new ResourceNotFoundException("Bitácora no encontrada"));
 
         GastoOperativo gasto = new GastoOperativo();

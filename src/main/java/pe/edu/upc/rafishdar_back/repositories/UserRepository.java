@@ -6,10 +6,12 @@ import org.springframework.data.repository.query.Param;
 import pe.edu.upc.rafishdar_back.entities.User;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
-    User findByCorreoIgnoreCase(String correo);
-    boolean existsByCorreoIgnoreCase(String correo);
+    Optional<User> findByEmail(String email);
+    User findByEmailIgnoreCase(String email);
+    boolean existsByEmailIgnoreCase(String email);
 
     @Query("SELECT u FROM User u " +
             "WHERE LOWER(u.nombres) LIKE LOWER(CONCAT('%', :termino, '%')) " +

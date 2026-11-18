@@ -24,8 +24,8 @@ public class RecomendacionIA {
     private LocalDateTime fechaGeneracion;
 
     @OneToOne
-    @JoinColumn(name = "bitacora_id")
-    private BitacoraFaena bitacora;
+    @JoinColumn(name = "faena_id")
+    private Faena faena;
 
 }
 

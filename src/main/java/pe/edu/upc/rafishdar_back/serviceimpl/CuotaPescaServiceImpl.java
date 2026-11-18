@@ -3,8 +3,9 @@ package pe.edu.upc.rafishdar_back.serviceimpl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import pe.edu.upc.rafishdar_back.dtos.CuotaPescaDTO;
+import pe.edu.upc.rafishdar_back.dtos.cuota_pesca.CuotaPescaDTO;
 import pe.edu.upc.rafishdar_back.dtos.EspeciePezDTO;
+import pe.edu.upc.rafishdar_back.dtos.cuota_pesca.CuotaPescaReqUpdDTO;
 import pe.edu.upc.rafishdar_back.entities.CuotaPesca;
 import pe.edu.upc.rafishdar_back.entities.EspeciePez;
 import pe.edu.upc.rafishdar_back.entities.Temporada;
@@ -32,20 +33,15 @@ public class CuotaPescaServiceImpl implements CuotaPescaService {
     @Override
     public List<CuotaPescaDTO> listarTodo() {
 
-        List<CuotaPesca> cuotas =
-                cuotaPescaRepository.findAll();
+        List<CuotaPesca> cuotas = cuotaPescaRepository.findAll();
 
         return convertirLista(cuotas);
     }
 
-
     @Override
-    public CuotaPescaDTO buscarPorId(Long id) {
+    public CuotaPescaDTO buscarPorIdDTO(Long id) {
 
-        CuotaPesca cuota =
-                cuotaPescaRepository
-                        .findById(id)
-                        .orElse(null);
+        CuotaPesca cuota = cuotaPescaRepository.findById(id).orElse(null);
 
         if (cuota == null) {
             return null;
@@ -56,17 +52,16 @@ public class CuotaPescaServiceImpl implements CuotaPescaService {
 
 
     @Override
-    public CuotaPescaDTO insertar(
-            CuotaPescaDTO cuotaPescaDTO) {
+    public CuotaPesca insertar(CuotaPescaReqUpdDTO requestDTO) {
 
-        if (!datosValidos(cuotaPescaDTO)) {
+        if (!datosValidos(requestDTO)) {
             return null;
         }
 
         EspeciePez especie =
                 especiePezRepository
                         .findById(
-                                cuotaPescaDTO.getEspecieId()
+                                requestDTO.getEspecieId()
                         )
                         .orElse(null);
 
@@ -77,7 +72,7 @@ public class CuotaPescaServiceImpl implements CuotaPescaService {
         Temporada temporada =
                 temporadaRepository
                         .findById(
-                                cuotaPescaDTO.getTemporadaId()
+                                requestDTO.getTemporadaId()
                         )
                         .orElse(null);
 
@@ -88,8 +83,8 @@ public class CuotaPescaServiceImpl implements CuotaPescaService {
         CuotaPesca cuotaExistente =
                 cuotaPescaRepository
                         .findByEspecieIdAndTemporadaId(
-                                cuotaPescaDTO.getEspecieId(),
-                                cuotaPescaDTO.getTemporadaId()
+                                requestDTO.getEspecieId(),
+                                requestDTO.getTemporadaId()
                         )
                         .orElse(null);
 
@@ -100,7 +95,7 @@ public class CuotaPescaServiceImpl implements CuotaPescaService {
         CuotaPesca cuota = new CuotaPesca();
 
         cuota.setLimiteToneladasIndustrial(
-                cuotaPescaDTO
+                requestDTO
                         .getLimiteToneladasIndustrial()
         );
 
@@ -115,21 +110,20 @@ public class CuotaPescaServiceImpl implements CuotaPescaService {
 
 
     @Override
-    public CuotaPescaDTO actualizar(
-            CuotaPescaDTO cuotaPescaDTO) {
-
-        if (cuotaPescaDTO == null ||
-                cuotaPescaDTO.getId() == null) {
+    public CuotaPescaDTO actualizar(CuotaPescaReqUpdDTO requestDTO) {
+        CuotaPesca foundCuota = cuotaPescaRepository.findById(requestDTO.getId()).orElse(null);
+        if (requestDTO == null ||
+                requestDTO.getId() == null) {
             return null;
         }
 
-        if (!datosValidos(cuotaPescaDTO)) {
+        if (!datosValidos(requestDTO)) {
             return null;
         }
 
         CuotaPesca cuota =
                 cuotaPescaRepository
-                        .findById(cuotaPescaDTO.getId())
+                        .findById(requestDTO.getId())
                         .orElse(null);
 
         if (cuota == null) {
@@ -139,7 +133,7 @@ public class CuotaPescaServiceImpl implements CuotaPescaService {
         EspeciePez especie =
                 especiePezRepository
                         .findById(
-                                cuotaPescaDTO.getEspecieId()
+                                requestDTO.getEspecieId()
                         )
                         .orElse(null);
 
@@ -150,7 +144,7 @@ public class CuotaPescaServiceImpl implements CuotaPescaService {
         Temporada temporada =
                 temporadaRepository
                         .findById(
-                                cuotaPescaDTO.getTemporadaId()
+                                requestDTO.getTemporadaId()
                         )
                         .orElse(null);
 
@@ -161,21 +155,21 @@ public class CuotaPescaServiceImpl implements CuotaPescaService {
         CuotaPesca cuotaRepetida =
                 cuotaPescaRepository
                         .findByEspecieIdAndTemporadaId(
-                                cuotaPescaDTO.getEspecieId(),
-                                cuotaPescaDTO.getTemporadaId()
+                                requestDTO.getEspecieId(),
+                                requestDTO.getTemporadaId()
                         )
                         .orElse(null);
 
         if (cuotaRepetida != null &&
                 !cuotaRepetida
                         .getId()
-                        .equals(cuotaPescaDTO.getId())) {
+                        .equals(requestDTO.getId())) {
 
             return null;
         }
 
         cuota.setLimiteToneladasIndustrial(
-                cuotaPescaDTO
+                requestDTO
                         .getLimiteToneladasIndustrial()
         );
 
@@ -291,7 +285,7 @@ public class CuotaPescaServiceImpl implements CuotaPescaService {
     }
 
     private boolean datosValidos(
-            CuotaPescaDTO cuotaPescaDTO) {
+            CuotaPescaReqUpdDTO cuotaPescaDTO) {
 
         if (cuotaPescaDTO == null) {
             return false;

@@ -1,9 +1,9 @@
 package pe.edu.upc.rafishdar_back.services;
 
-import pe.edu.upc.rafishdar_back.dtos.UserActualizarDTO;
-import pe.edu.upc.rafishdar_back.dtos.UserCambioPasswordDTO;
-import pe.edu.upc.rafishdar_back.dtos.UserDTO;
-import pe.edu.upc.rafishdar_back.dtos.UserRegistroDTO;
+import pe.edu.upc.rafishdar_back.dtos.user.UserActualizarDTO;
+import pe.edu.upc.rafishdar_back.dtos.user.UserCambioPasswordDTO;
+import pe.edu.upc.rafishdar_back.dtos.user.UserDTO;
+import pe.edu.upc.rafishdar_back.dtos.user.UserRegistroDTO;
 import pe.edu.upc.rafishdar_back.entities.User;
 
 import java.util.List;

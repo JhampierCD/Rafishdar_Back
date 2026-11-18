@@ -26,6 +26,6 @@ public class CondicionClimatica {
     @JsonIgnore
     @OneToOne
     @JoinColumn(name = "bitacora_id")
-    private BitacoraFaena bitacora;
+    private Bitacora bitacora;
 
 }

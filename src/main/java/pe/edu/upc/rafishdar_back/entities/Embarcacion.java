@@ -31,5 +31,5 @@ public class Embarcacion {
 
     @JsonIgnore
     @OneToMany(mappedBy = "embarcacion")
-    private List<BitacoraFaena> bitacoras;
+    private List<Faena> faenas;
 }

@@ -28,5 +28,5 @@ ZonaPesca {
 
     @JsonIgnore
     @OneToMany(mappedBy = "zonaPesca")
-    private List<BitacoraFaena> bitacoras;
+    private List<Bitacora> bitacoras;
 }
