@@ -11,10 +11,10 @@ public interface ZonaPescaRepository extends JpaRepository<ZonaPesca, Long> {
     ZonaPesca findZonaPescaByNombreZona(String nombreZona);
 
     @Query(value = "SELECT z.* FROM zonas_pesca z " +
-            "JOIN bitacoras_faena b ON z.id = b.zona_pesca_id " +
+            "JOIN bitacoras b ON z.id = b.zona_pesca_id " +
             "JOIN detalles_captura d ON b.id = d.bitacora_id " +
             "WHERE d.especie_id = :especieId " +
-            "AND EXTRACT(MONTH FROM b.fecha_hora_llegada) = :mes " +
+            "AND EXTRACT(MONTH FROM b.fecha_hora_registro) = :mes " +
             "GROUP BY z.id " +
             "ORDER BY SUM(d.volumen_kg) DESC " +
             "LIMIT 3", nativeQuery = true)

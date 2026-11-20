@@ -10,9 +10,9 @@ import java.util.List;
 
 @Service
 public class ZonaPescaServiceImpl implements ZonaPescaService {
-     @Autowired
-    private ZonaPescaRepository zonaPescaRepository;
 
+    @Autowired
+    private ZonaPescaRepository zonaPescaRepository;
 
     @Override
     public List<ZonaPesca> listarZonaPesca() {
@@ -21,42 +21,54 @@ public class ZonaPescaServiceImpl implements ZonaPescaService {
 
     @Override
     public ZonaPesca buscarPorId(Long id) {
+        if (id == null) return null;
         return zonaPescaRepository.findById(id).orElse(null);
     }
 
     @Override
     public ZonaPesca insertar(ZonaPesca zonaPesca) {
-        ZonaPesca foundZonaPesca = zonaPescaRepository.findZonaPescaByNombreZona(zonaPesca.getNombreZona());
-        if (foundZonaPesca != null) {
-            throw new IllegalArgumentException("Ya existe una zona de pesca con el mismo nombre.");
+        if (zonaPesca == null || zonaPesca.getNombreZona() == null || zonaPesca.getNombreZona().isBlank()) {
+            return null;
         }
+        ZonaPesca foundZonaPesca = zonaPescaRepository.findZonaPescaByNombreZona(zonaPesca.getNombreZona().trim());
+        if (foundZonaPesca != null) {
+            return null;
+        }
+        zonaPesca.setNombreZona(zonaPesca.getNombreZona().trim());
         return zonaPescaRepository.save(zonaPesca);
     }
 
     @Override
     public ZonaPesca actualizar(ZonaPesca zonaPesca) {
+        if (zonaPesca == null || zonaPesca.getId() == null) {
+            return null;
+        }
         ZonaPesca foundZonaPesca = buscarPorId(zonaPesca.getId());
         if (foundZonaPesca == null) {
             return null;
         }
-        if (zonaPesca.getNombreZona() == null || zonaPesca.getNombreZona().isEmpty()){
+
+        if (zonaPesca.getNombreZona() == null || zonaPesca.getNombreZona().isBlank()) {
             zonaPesca.setNombreZona(foundZonaPesca.getNombreZona());
+        } else {
+            zonaPesca.setNombreZona(zonaPesca.getNombreZona().trim());
         }
-        if (zonaPesca.getLatitud() == null){
+        if (zonaPesca.getLatitud() == null) {
             zonaPesca.setLatitud(foundZonaPesca.getLatitud());
         }
-        if (zonaPesca.getLongitud() == null){
+        if (zonaPesca.getLongitud() == null) {
             zonaPesca.setLongitud(foundZonaPesca.getLongitud());
         }
-        if (zonaPesca.getDistanciaCostaKm() == null){
+        if (zonaPesca.getDistanciaCostaKm() == null) {
             zonaPesca.setDistanciaCostaKm(foundZonaPesca.getDistanciaCostaKm());
         }
-        if (zonaPesca.getRadioAreaKm() == null){
+        if (zonaPesca.getRadioAreaKm() == null) {
             zonaPesca.setRadioAreaKm(foundZonaPesca.getRadioAreaKm());
         }
 
-        if (zonaPescaRepository.findZonaPescaByNombreZona(zonaPesca.getNombreZona())!=null){
-           return null;
+        ZonaPesca zona = zonaPescaRepository.findZonaPescaByNombreZona(zonaPesca.getNombreZona());
+        if (zona != null && !zona.getId().equals(zonaPesca.getId())) {
+            return null;
         }
         return zonaPescaRepository.save(zonaPesca);
     }

@@ -180,13 +180,8 @@ public class DetalleCapturaServiceImpl implements DetalleCapturaService {
     public List<Long> obtenerTopZonasParaEspecieEnMesCorriente(Long idEspecie) {
         int mesActual = LocalDateTime.now().getMonthValue();
         // Top 3 de zonas usando PageRequest
-        List<DetalleCapturaDTO> resultados = capturaRepository.encontrarMejoresZonasPorEspecieYMes(idEspecie, mesActual, PageRequest.of(0, 3));
-
-        List<Long> zonasIds = new ArrayList<>();
-        for (DetalleCapturaDTO fila : resultados) {
-            zonasIds.add(fila.getId());
-        }
-        return zonasIds;
+        List<Long> resultados = capturaRepository.encontrarMejoresZonasPorEspecieYMes(idEspecie, mesActual, PageRequest.of(0, 3));
+        return resultados;
     }
 
     @Override

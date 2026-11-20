@@ -122,7 +122,7 @@ public class UserController {
 
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            user.getCorreo(),
+                            user.getEmail(),
                             user.getPassword()
                     )
             );
@@ -131,7 +131,7 @@ public class UserController {
                     (UserSecurity)
                             userDetailsServiceImpl
                                     .loadUserByUsername(
-                                            user.getCorreo()
+                                            user.getEmail()
                                     );
 
             String token =

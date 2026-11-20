@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import pe.edu.upc.rafishdar_back.dtos.CondicionClimaticaDTO;
 import pe.edu.upc.rafishdar_back.entities.Bitacora;
 import pe.edu.upc.rafishdar_back.entities.CondicionClimatica;
-import pe.edu.upc.rafishdar_back.repositories.FaenaRepository;
+import pe.edu.upc.rafishdar_back.repositories.BitacoraRepository;
 import pe.edu.upc.rafishdar_back.repositories.CondicionClimaticaRepository;
 import pe.edu.upc.rafishdar_back.services.CondicionClimaticaService;
 
@@ -18,7 +18,7 @@ public class CondicionClimaticaServiceImpl implements CondicionClimaticaService 
     private CondicionClimaticaRepository condicionClimaticaRepository;
 
     @Autowired
-    private FaenaRepository bitacoraFaenaRepository;
+    private BitacoraRepository bitacoraRepository;
 
     @Override
     public List<CondicionClimatica> listarTodoCondiciones() {
@@ -27,7 +27,7 @@ public class CondicionClimaticaServiceImpl implements CondicionClimaticaService 
 
     @Override
     public CondicionClimatica insertarCondicionesPorBitacora(Long idBitacora, CondicionClimaticaDTO dto) {
-        Bitacora bitacora = bitacoraFaenaRepository.findById(idBitacora)
+        Bitacora bitacora = bitacoraRepository.findById(idBitacora)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "La bitácora con id " + idBitacora + " no existe"
                 ));
@@ -44,7 +44,7 @@ public class CondicionClimaticaServiceImpl implements CondicionClimaticaService 
     @Override
     public CondicionClimatica actualizarCondiciones(CondicionClimatica condicionClimatica) {
         CondicionClimatica foundCondicion = buscarPorId(condicionClimatica.getId());
-        if (foundCondicion ==null ) return null;
+        if (foundCondicion == null) return null;
 
         if (condicionClimatica.getTemperaturaCelsius() != null)
             foundCondicion.setTemperaturaCelsius(condicionClimatica.getTemperaturaCelsius());
@@ -52,7 +52,6 @@ public class CondicionClimaticaServiceImpl implements CondicionClimaticaService 
             foundCondicion.setVelocidadVientoNudos(condicionClimatica.getVelocidadVientoNudos());
         if (condicionClimatica.getEstadoOleaje() != null)
             foundCondicion.setEstadoOleaje(condicionClimatica.getEstadoOleaje());
-        // BN-10: la referencia a bitácora no se puede cambiar en un update
         return condicionClimaticaRepository.save(foundCondicion);
     }
 
@@ -79,16 +78,15 @@ public class CondicionClimaticaServiceImpl implements CondicionClimaticaService 
                     "La condición climática debe estar asociada a una bitácora válida"
             );
         }
-        boolean bitacoraExiste = bitacoraFaenaRepository
-                .existsById(condicion.getBitacora().getId());
+        boolean bitacoraExiste = bitacoraRepository.existsById(condicion.getBitacora().getId());
         if (!bitacoraExiste) {
             throw new IllegalArgumentException(
                     "La bitácora con id " + condicion.getBitacora().getId() + " no existe"
             );
         }
 
-        // BN-10: si ya existe condición para esa bitácora, actualizar en lugar de crear
-        Optional<CondicionClimatica> existente = condicionClimaticaRepository.findByBitacoraId(condicion.getBitacora().getId());
+        Optional<CondicionClimatica> existente =
+                condicionClimaticaRepository.findByBitacoraId(condicion.getBitacora().getId());
 
         if (existente.isPresent()) {
             CondicionClimatica actual = existente.get();

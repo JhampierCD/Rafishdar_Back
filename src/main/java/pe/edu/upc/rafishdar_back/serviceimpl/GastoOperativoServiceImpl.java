@@ -4,7 +4,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pe.edu.upc.rafishdar_back.dtos.GastoOperativoRequestDTO;
-import pe.edu.upc.rafishdar_back.entities.Bitacora;
+import pe.edu.upc.rafishdar_back.entities.Faena;
 import pe.edu.upc.rafishdar_back.entities.GastoOperativo;
 import pe.edu.upc.rafishdar_back.exceptions.ConflictException;
 import pe.edu.upc.rafishdar_back.exceptions.ResourceNotFoundException;
@@ -24,6 +24,8 @@ public class GastoOperativoServiceImpl implements GastoOperativoService {
 
     @Autowired
     private FaenaRepository bitacoraRepository;
+    @Autowired
+    private FaenaServiceImpl faenaServiceImpl;
 
     // --- MÉTODOS BASE (CRUD) ---
 
@@ -33,17 +35,16 @@ public class GastoOperativoServiceImpl implements GastoOperativoService {
     }
 
     @Override
-    public GastoOperativo insertarGasto(Long idBitacora, GastoOperativoRequestDTO request) {
+    public GastoOperativo insertarGasto(Long idFaena, GastoOperativoRequestDTO request) {
         // Regla 1:1 - Verificamos si la faena ya tiene un gasto registrado
-        if (gastoRepository.findByBitacoraId(idBitacora).isPresent()) {
+        if (gastoRepository.findByBitacoraId(idFaena).isPresent()) {
             throw new ConflictException("Esta bitácora ya tiene gastos registrados. Utilice el método de actualización.");
         }
 
-        Bitacora bitacora = bitacoraRepository.findById(idBitacora)
-                .orElseThrow(() -> new ResourceNotFoundException("Bitácora no encontrada"));
+        Faena faena = bitacoraRepository.findById(idFaena).orElseThrow(() -> new ResourceNotFoundException("Bitácora no encontrada"));
 
         GastoOperativo gasto = new GastoOperativo();
-        gasto.setBitacora(bitacora);
+        gasto.setFaena(faena);
         gasto.setGalonesCombustible(request.getGalonesCombustible());
         gasto.setCostoCombustible(request.getCostoCombustible());
         gasto.setCostoHieloInsumos(request.getCostoHieloInsumos());
@@ -70,17 +71,17 @@ public class GastoOperativoServiceImpl implements GastoOperativoService {
     }
 
     @Override
-    public void eliminar(Long idBitacora) {
-        GastoOperativo gasto = gastoRepository.findByBitacoraId(idBitacora)
+    public void eliminar(Long idFaena) {
+        GastoOperativo gasto = gastoRepository.findByBitacoraId(idFaena)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Gasto operativo no encontrado para la bitácora"
                 ));
-        if ("Finalizada".equals(gasto.getBitacora().getEstado())) {
+        if ("Finalizada".equals(gasto.getFaena().getEstado())) {
             throw new ConflictException(
                     "No se puede eliminar el gasto de una bitácora finalizada"
             );
         }
-        gastoRepository.deleteByBitacoraId(idBitacora);
+        gastoRepository.deleteByBitacoraId(idFaena);
     }
 
     // --- MÉTODOS ANALÍTICOS ---

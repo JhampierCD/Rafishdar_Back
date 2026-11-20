@@ -36,25 +36,33 @@ public class EmbarcacionServiceImpl implements EmbarcacionService {
 
     @Override
     public Embarcacion actualizar(Embarcacion embarcacion) {
-        Embarcacion foundEmbarcacion= buscarPorId(embarcacion.getId());
+        if (embarcacion == null || embarcacion.getId() == null) {
+            return null;
+        }
+        Embarcacion foundEmbarcacion = buscarPorId(embarcacion.getId());
         if (foundEmbarcacion == null) {
             return null;
         }
-        if (embarcacion.getNombre() == null || embarcacion.getNombre().isEmpty()){
-            embarcacion.setNombre(foundEmbarcacion.getNombre());
-        }
-        if (embarcacion.getMatricula() == null || embarcacion.getMatricula().isEmpty()){
+
+        if (embarcacion.getMatricula() != null && !embarcacion.getMatricula().isEmpty()) {
+            if (!embarcacion.getMatricula().equals(foundEmbarcacion.getMatricula()) &&
+                    existeMatricula(embarcacion.getMatricula())) {
+                return null;
+            }
+        } else {
             embarcacion.setMatricula(foundEmbarcacion.getMatricula());
         }
-        if (embarcacion.getCapacidadToneladas() == null){
+
+        if (embarcacion.getNombre() == null || embarcacion.getNombre().isEmpty()) {
+            embarcacion.setNombre(foundEmbarcacion.getNombre());
+        }
+        if (embarcacion.getCapacidadToneladas() == null) {
             embarcacion.setCapacidadToneladas(foundEmbarcacion.getCapacidadToneladas());
         }
-
-        if (embarcacion.getMatricula() != null &&
-                !embarcacion.getMatricula().equals(foundEmbarcacion.getMatricula()) &&
-                existeMatricula(embarcacion.getMatricula())) {
-           return null;
+        if (embarcacion.getUsuario() == null) {
+            embarcacion.setUsuario(foundEmbarcacion.getUsuario());
         }
+
         return embarcacionRepository.save(embarcacion);
     }
 
