@@ -124,15 +124,11 @@ public class ZonaPescaController {
     public ResponseEntity<ZonaPesca> actualizar(
             @RequestBody ZonaPesca zonaPesca) {
 
-        if (zonaPescaService.actualizar(zonaPesca) == null) {
-            return new ResponseEntity<>(
-                    HttpStatus.NOT_ACCEPTABLE
-            );
+        ZonaPesca updatedZona = zonaPescaService.actualizar(zonaPesca);
+        if (updatedZona == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE);
         }
 
-        return new ResponseEntity<>(
-                zonaPesca,
-                HttpStatus.OK
-        );
+        return new ResponseEntity<>(updatedZona, HttpStatus.OK);
     }
 }

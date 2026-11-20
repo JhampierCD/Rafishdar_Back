@@ -22,7 +22,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
         User user =
                 userRepository
-                        .findByCorreoIgnoreCase(
+                        .findByEmailIgnoreCase(
                                 username
                         );
 

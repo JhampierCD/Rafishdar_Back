@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ZonaPescaDTO {
-
+    private Long id;
     private String nombreZona;
     private Double latitud;
     private Double longitud;

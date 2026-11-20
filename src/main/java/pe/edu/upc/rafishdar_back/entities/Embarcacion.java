@@ -1,6 +1,7 @@
 package pe.edu.upc.rafishdar_back.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -23,8 +24,9 @@ public class Embarcacion {
     private String nombre;
     private String matricula;
     private Double capacidadToneladas;
+
     @ToString.Exclude
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @ManyToOne
     @JoinColumn(name = "usuario_id")
     private User usuario;

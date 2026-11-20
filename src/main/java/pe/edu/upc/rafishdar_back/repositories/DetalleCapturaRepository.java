@@ -1,13 +1,10 @@
 package pe.edu.upc.rafishdar_back.repositories;
 
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import pe.edu.upc.rafishdar_back.dtos.detalle_captura.DetalleCapturaDTO;
 import pe.edu.upc.rafishdar_back.entities.DetalleCaptura;
 
-import java.awt.print.Pageable;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -46,15 +43,15 @@ public interface DetalleCapturaRepository extends JpaRepository<DetalleCaptura, 
 
     // Retorna una lista de zonas y su volumen total, ordenada de mayor a menor captura para una especie en un mes específico.
     // Se usa Pageable (ej. PageRequest.of(0, 3)) para obtener solo el "Top 3" de zonas.
-    @Query("SELECT b.zonaPesca.id, SUM(d.volumenKg) AS totalKg " +
+    @Query("SELECT b.zonaPesca.id " +
             "FROM DetalleCaptura d JOIN d.bitacora b " +
             "WHERE d.especie.id = :especieId " +
             "AND MONTH(b.fechaHoraRegistro) = :mes " +
             "GROUP BY b.zonaPesca.id " +
-            "ORDER BY totalKg DESC")
-    List<DetalleCapturaDTO> encontrarMejoresZonasPorEspecieYMes(@Param("especieId") Long especieId,
+            "ORDER BY SUM(d.volumenKg) DESC")
+    List<Long> encontrarMejoresZonasPorEspecieYMes(@Param("especieId") Long especieId,
                                                                 @Param("mes") int mes,
-                                                                PageRequest pageable);
+                                                                org.springframework.data.domain.Pageable pageable);
 
     // Calcula la suma de kilogramos de especies que están en veda para una bitácora específica.
     @Query("SELECT SUM(d.volumenKg) FROM DetalleCaptura d " +
