@@ -53,7 +53,7 @@ public class BitacoraController {
             @RequestBody BitacoraUpdateDTO bitacora) {
 
         Bitacora updatedBitacora =
-                bitacoraService.actualizarBitacora(bitacora);
+                bitacoraService.actualizarBitacora(id, bitacora);
 
         return new ResponseEntity<>(updatedBitacora, HttpStatus.OK);
     }

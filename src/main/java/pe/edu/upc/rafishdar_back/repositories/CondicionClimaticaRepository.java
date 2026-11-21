@@ -18,7 +18,7 @@ public interface CondicionClimaticaRepository extends JpaRepository<CondicionCli
     @Query("""
         SELECT c FROM CondicionClimatica c
         WHERE c.bitacora.id = :bitacoraId
-        AND c.bitacora.usuario.id = :usuarioId
+        AND c.bitacora.faena.usuario.id = :usuarioId
     """)
     Optional<CondicionClimatica> findByBitacoraIdAndUsuarioId(
             @Param("bitacoraId") Long bitacoraId,
@@ -42,8 +42,8 @@ public interface CondicionClimaticaRepository extends JpaRepository<CondicionCli
     @Query("""
         SELECT c FROM CondicionClimatica c
         WHERE c.bitacora.zonaPesca.id = :zonaId
-        AND FUNCTION('MONTH', c.bitacora.fechaHoraSalida) = :mes
-        AND FUNCTION('YEAR',  c.bitacora.fechaHoraSalida) = :anio
+        AND FUNCTION('MONTH', c.bitacora.faena.fechaHoraSalida) = :mes
+        AND FUNCTION('YEAR',  c.bitacora.faena.fechaHoraSalida) = :anio
     """)
     List<CondicionClimatica> findByZonaYMes(
             @Param("zonaId") Long zonaId,

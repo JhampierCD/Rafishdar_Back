@@ -141,6 +141,7 @@ public class TemporadaController {
         );
     }
 
+    // http://localhost:8080/rafishdar/temporadas/superpuestas?inicio=2024-01-01&fin=2024-12-31
     @GetMapping("/temporadas/superpuestas")
     public ResponseEntity<List<TemporadaDTO>> buscarSuperpuestas(
             @RequestParam LocalDate inicio,

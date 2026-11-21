@@ -17,6 +17,7 @@ public class ZonaPescaController {
     @Autowired
     ZonaPescaService zonaPescaService;
 
+    // http://localhost:8080/rafishdar/zonas-pesca
     @GetMapping("/zonas-pesca")
     public ResponseEntity<List<ZonaPesca>> listarZonaPesca() {
 
@@ -36,6 +37,7 @@ public class ZonaPescaController {
         );
     }
 
+    // http://localhost:8080/rafishdar/zonas-pesca/top3/especie/1?mes=5
     @GetMapping("/zonas-pesca/top3/especie/{especieId}")
     public ResponseEntity<List<ZonaPesca>> listarTop3Historicas(
             @PathVariable Long especieId,
@@ -51,6 +53,7 @@ public class ZonaPescaController {
         return new ResponseEntity<>(zonas, HttpStatus.OK);
     }
 
+    // http://localhost:8080/rafishdar/zonas-pesca/cercanas?distanciaMaxima=10.0
     @GetMapping("/zonas-pesca/cercanas")
     public ResponseEntity<List<ZonaPesca>> listarCercanasACosta(
             @RequestParam Double distanciaMaxima) {
@@ -65,6 +68,7 @@ public class ZonaPescaController {
         return new ResponseEntity<>(zonas, HttpStatus.OK);
     }
 
+    // http://localhost:8080/rafishdar/zonas-pesca/1
     @GetMapping("/zonas-pesca/{id}")
     public ResponseEntity<ZonaPesca> buscarporId(
             @PathVariable("id") Long id) {
@@ -85,6 +89,7 @@ public class ZonaPescaController {
         );
     }
 
+    // http://localhost:8080/rafishdar/zonas-pesca
     @PostMapping("/zonas-pesca")
     public ResponseEntity<ZonaPesca> insertar(
             @RequestBody ZonaPesca zonaPesca) {
@@ -105,6 +110,7 @@ public class ZonaPescaController {
         );
     }
 
+    // http://localhost:8080/rafishdar/zonas-pesca/1
     @DeleteMapping("/zonas-pesca/{id}")
     public ResponseEntity<HttpStatus> eliminar(
             @PathVariable("id") Long id) {
@@ -120,6 +126,7 @@ public class ZonaPescaController {
         );
     }
 
+    // http://localhost:8080/rafishdar/zonas-pesca
     @PutMapping("/zonas-pesca")
     public ResponseEntity<ZonaPesca> actualizar(
             @RequestBody ZonaPesca zonaPesca) {

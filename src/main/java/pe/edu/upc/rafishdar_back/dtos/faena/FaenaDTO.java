@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class FaenaDTO {
     private Long id;
+    private LocalDateTime fechaHoraSalidaProgramada;
+    private LocalDateTime fechaHoraLlegadaEstimada;
     private LocalDateTime fechaHoraSalida;
     private LocalDateTime fechaHoraLlegada;
     private String estado;

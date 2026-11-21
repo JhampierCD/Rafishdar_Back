@@ -8,6 +8,10 @@ import pe.edu.upc.rafishdar_back.entities.EspeciePez;
 import java.util.List;
 
 public interface EspeciePezRepository extends JpaRepository<EspeciePez, Long> {
+    boolean existsByNombreComunIgnoreCase(String nombreComun);
+    boolean existsByNombreCientificoIgnoreCase(String nombreCientifico);
+    boolean existsByNombreComunIgnoreCaseAndIdNot(String nombreComun, Long id);
+    boolean existsByNombreCientificoIgnoreCaseAndIdNot(String nombreCientifico, Long id);
 
     @Query("SELECT e FROM EspeciePez e WHERE e.estadoVeda = :estadoVeda")
     List<EspeciePez> findByEstadoVeda(@Param("estadoVeda") Boolean estadoVeda);

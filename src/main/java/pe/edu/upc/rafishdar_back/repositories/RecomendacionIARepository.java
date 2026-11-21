@@ -10,19 +10,19 @@ import java.util.Optional;
 
 public interface RecomendacionIARepository extends JpaRepository<RecomendacionIA, Long> {
     // BN-23: verificar si ya existe recomendación para la bitácora (1:1)
-    boolean existsByBitacoraId(Long bitacoraId);
+    boolean existsByFaenaId(Long faenaId);
 
     // BN-23: recuperar la recomendación existente para hacer upsert en regeneración
-    Optional<RecomendacionIA> findByBitacoraId(Long bitacoraId);
+    Optional<RecomendacionIA> findByFaenaId(Long faenaId);
 
     // US-25: consulta validando propietario (el pescador solo ve las suyas)
     @Query("""
         SELECT r FROM RecomendacionIA r
-        WHERE r.bitacora.id    = :bitacoraId
-        AND   r.bitacora.usuario.id = :usuarioId
+        WHERE r.faena.id = :faenaId
+        AND r.faena.usuario.id = :usuarioId
     """)
-    Optional<RecomendacionIA> findByBitacoraIdAndUsuarioId(
-            @Param("bitacoraId") Long bitacoraId,
+    Optional<RecomendacionIA> findByFaenaIdAndUsuarioId(
+            @Param("faenaId") Long faenaId,
             @Param("usuarioId") Long usuarioId
     );
 
@@ -33,7 +33,7 @@ public interface RecomendacionIARepository extends JpaRepository<RecomendacionIA
     // ordenadas por fecha de generación descendente
     @Query("""
         SELECT r FROM RecomendacionIA r
-        WHERE r.bitacora.usuario.id = :usuarioId
+        WHERE r.faena.usuario.id = :usuarioId
         ORDER BY r.fechaGeneracion DESC
     """)
     List<RecomendacionIA> findUltimasByUsuario(@Param("usuarioId") Long usuarioId);
@@ -50,5 +50,5 @@ public interface RecomendacionIARepository extends JpaRepository<RecomendacionIA
     );
 
     // Conteo de recomendaciones por nivel de riesgo para dashboard (US-34)
-    long countByNivelRiesgoAndBitacoraUsuarioId(String nivelRiesgo, Long usuarioId);
+    long countByNivelRiesgoAndFaenaUsuarioId(String nivelRiesgo, Long usuarioId);
 }

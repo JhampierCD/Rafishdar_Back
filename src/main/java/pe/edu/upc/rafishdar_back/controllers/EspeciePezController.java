@@ -142,6 +142,7 @@ public class EspeciePezController {
         );
     }
 
+    // http://localhost:8080/rafishdar/especies/buscar?nombreComun=anchoveta
     @GetMapping("/especies/buscar")
     public ResponseEntity<List<EspeciePezDTO>> buscarPorNombreComun(
             @RequestParam("nombreComun") String nombreComun) {

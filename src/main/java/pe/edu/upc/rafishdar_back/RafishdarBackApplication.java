@@ -4,32 +4,42 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import pe.edu.upc.rafishdar_back.dtos.*;
 import pe.edu.upc.rafishdar_back.dtos.cuota_pesca.CuotaPescaDTO;
+import pe.edu.upc.rafishdar_back.dtos.cuota_pesca.CuotaPescaRequestDTO;
 import pe.edu.upc.rafishdar_back.dtos.detalle_captura.DetalleCapturaRequestDTO;
+import pe.edu.upc.rafishdar_back.dtos.bitacora.BitacoraRequestDTO;
+import pe.edu.upc.rafishdar_back.dtos.faena.FaenaRequestDTO;
 import pe.edu.upc.rafishdar_back.dtos.user.UserDTO;
 import pe.edu.upc.rafishdar_back.dtos.user.UserRegistroDTO;
 import pe.edu.upc.rafishdar_back.entities.Authority;
 import pe.edu.upc.rafishdar_back.entities.Bitacora;
 import pe.edu.upc.rafishdar_back.entities.Embarcacion;
+import pe.edu.upc.rafishdar_back.entities.Faena;
 import pe.edu.upc.rafishdar_back.entities.RecomendacionIA;
 import pe.edu.upc.rafishdar_back.entities.User;
 import pe.edu.upc.rafishdar_back.entities.ZonaPesca;
-import pe.edu.upc.rafishdar_back.repositories.FaenaRepository;
+import pe.edu.upc.rafishdar_back.repositories.BitacoraRepository;
+import pe.edu.upc.rafishdar_back.repositories.AuthorityRepository;
 import pe.edu.upc.rafishdar_back.repositories.UserRepository;
-import pe.edu.upc.rafishdar_back.services.AuthorityService;
-import pe.edu.upc.rafishdar_back.services.FaenaService;
+import pe.edu.upc.rafishdar_back.services.BitacoraService;
 import pe.edu.upc.rafishdar_back.services.CondicionClimaticaService;
 import pe.edu.upc.rafishdar_back.services.CuotaPescaService;
 import pe.edu.upc.rafishdar_back.services.DetalleCapturaService;
 import pe.edu.upc.rafishdar_back.services.EmbarcacionService;
 import pe.edu.upc.rafishdar_back.services.EspeciePezService;
+import pe.edu.upc.rafishdar_back.services.FaenaService;
 import pe.edu.upc.rafishdar_back.services.GastoOperativoService;
 import pe.edu.upc.rafishdar_back.services.RecomendacionIAService;
 import pe.edu.upc.rafishdar_back.services.TemporadaService;
 import pe.edu.upc.rafishdar_back.services.UserService;
 import pe.edu.upc.rafishdar_back.services.ZonaPescaService;
+import pe.edu.upc.rafishdar_back.security.UserSecurity;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -45,10 +55,12 @@ public class RafishdarBackApplication {
     }
 
     @Bean
+    @Order(2)
     public CommandLineRunner startConfiguration(
-            AuthorityService authorityService,
-            FaenaService bitacoraService,
-            FaenaRepository bitacoraRepository,
+            AuthorityRepository authorityRepository,
+            BitacoraRepository bitacoraRepository,
+            BitacoraService bitacoraService,
+            FaenaService faenaService,
             CondicionClimaticaService condicionService,
             CuotaPescaService cuotaPescaService,
             DetalleCapturaService detalleCapturaService,
@@ -62,9 +74,13 @@ public class RafishdarBackApplication {
             ZonaPescaService zonaPescaService
     ) {
         return args -> {
-            Authority adminRole = crearAuthority(authorityService, "ADMIN");
-            Authority fishermanRole = crearAuthority(authorityService, "PESCADOR");
-            Authority technicianRole = crearAuthority(authorityService, "TECNICO");
+            if (userRepository.existsByEmailIgnoreCase("admin@rafishdar.com")) {
+                return;
+            }
+
+            Authority adminRole = obtenerAuthority(authorityRepository, "ADMIN");
+            Authority fishermanRole = obtenerAuthority(authorityRepository, "PESCADOR");
+            Authority technicianRole = obtenerAuthority(authorityRepository, "TECNICO");
 
             User admin = registrarUser(
                     userService, "Ana", "Administradora",
@@ -93,6 +109,10 @@ public class RafishdarBackApplication {
             asignarRoles(userRepository, technician, technicianRole);
             asignarRoles(userRepository, inactiveUser, fishermanRole);
             userService.eliminarLogico(inactiveUser.getId());
+            UserSecurity adminSecurity = new UserSecurity(admin);
+            SecurityContextHolder.getContext().setAuthentication(
+                    new UsernamePasswordAuthenticationToken(
+                            adminSecurity, null, adminSecurity.getAuthorities()));
 
             Embarcacion boatOne = crearEmbarcacion(
                     embarcacionService, "La Niña II", "CE-12345-PM",
@@ -164,98 +184,94 @@ public class RafishdarBackApplication {
             crearCuotaPesca(cuotaPescaService, bonito, futureSeason, 900.0);
 
             LocalDateTime now = LocalDateTime.now();
-            Bitacora callaoTrip = crearBitacoraFaena(
-                    bitacoraService, fisherman, boatOne, callao,
-                    now.minusDays(1)
+            Faena callaoTrip = crearFaenaEnCurso(
+                    faenaService, bitacoraService, fisherman, boatOne, callao,
+                    now.plusDays(1), -12.0510, -77.2010,
+                    "Salida desde Callao; se registra la zona de pesca"
             );
-            Bitacora huachoTrip = crearBitacoraFaena(
-                    bitacoraService, fisherman, boatTwo, huacho,
-                    now.minusDays(2)
+            registrarBitacora(
+                    bitacoraService, fisherman, callaoTrip, callao,
+                    -12.0520, -77.2020, "Incidencia: peligro por red rota y lobo marino"
             );
-            Bitacora piscoTrip = crearBitacoraFaena(
-                    bitacoraService, secondFisherman, boatThree, pisco,
-                    now.minusDays(3)
-            );
-            Bitacora activeTrip = crearBitacoraFaena(
-                    bitacoraService, fisherman, boatOne, pisco,
-                    now.plusHours(1)
-            );
-            crearBitacoraFaena(
-                    bitacoraService, secondFisherman, boatThree, callao,
-                    now.plusDays(1)
-            );
+            finalizarFaena(faenaService, fisherman, callaoTrip);
 
-            terminarBitacoraFaena(
-                    bitacoraService, bitacoraRepository, callaoTrip,
-                    now.minusHours(4), now.minusHours(2),
-                    -12.0510, -77.2010,
-                    "Incidencia: peligro por red rota y lobo marino"
-            );
-            terminarBitacoraFaena(
-                    bitacoraService, bitacoraRepository, huachoTrip,
-                    now.minusHours(7), now.minusHours(4),
-                    -11.1020, -77.6020,
+            Faena huachoTrip = crearFaenaEnCurso(
+                    faenaService, bitacoraService, fisherman, boatTwo, huacho,
+                    now.plusDays(2), -11.1020, -77.6020,
                     "Faena exitosa con oleaje moderado"
             );
-            terminarBitacoraFaena(
-                    bitacoraService, bitacoraRepository, piscoTrip,
-                    now.minusHours(6), now.minusHours(3),
-                    -13.7020, -76.3020,
+            finalizarFaena(faenaService, fisherman, huachoTrip);
+
+            Faena piscoTrip = crearFaenaEnCurso(
+                    faenaService, bitacoraService, secondFisherman, boatThree, pisco,
+                    now.plusDays(3), -13.7020, -76.3020,
                     "Captura abundante en condiciones seguras"
             );
-            bitacoraService.cambiarEstadoAEnCurso(activeTrip.getId());
-            Bitacora activeChanges = new Bitacora();
-            activeChanges.setLatitudPesca(-13.7100);
-            activeChanges.setLongitudPesca(-76.3100);
-            activeChanges.setObservaciones("Faena en curso para pruebas de actualización");
-            bitacoraService.actualizarEnCurso(activeTrip.getId(), activeChanges);
+            registrarBitacora(
+                    bitacoraService, secondFisherman, piscoTrip, callao,
+                    -12.0530, -77.2030, "Incidencia: se reporta una red rota en la zona"
+            );
+            registrarBitacora(
+                    bitacoraService, secondFisherman, piscoTrip, pisco,
+                    -13.7040, -76.3040, "Continuación de faena en la zona de Pisco"
+            );
+            finalizarFaena(faenaService, secondFisherman, piscoTrip);
 
-            agregarCaptura(detalleCapturaService, callaoTrip, anchoveta, 420.0);
-            agregarCaptura(detalleCapturaService, callaoTrip, caballa, 35.0);
-            agregarCaptura(detalleCapturaService, huachoTrip, anchoveta, 230.0);
-            agregarCaptura(detalleCapturaService, huachoTrip, bonito, 180.0);
-            agregarCaptura(detalleCapturaService, huachoTrip, merluza, 22.0);
-            agregarCaptura(detalleCapturaService, piscoTrip, anchoveta, 110.0);
-            agregarCaptura(detalleCapturaService, piscoTrip, bonito, 310.0);
-            agregarCaptura(detalleCapturaService, piscoTrip, caballa, 18.0);
-            agregarCaptura(detalleCapturaService, activeTrip, anchoveta, 95.0);
-            agregarCaptura(detalleCapturaService, activeTrip, merluza, 12.0);
+            Faena activeTrip = crearFaenaEnCurso(
+                    faenaService, bitacoraService, fisherman, boatOne, pisco,
+                    now.plusDays(4), -13.7100, -76.3100,
+                    "Faena en curso para pruebas de actualización"
+            );
+            crearFaenaPlanificada(faenaService, fisherman, boatTwo, now.plusDays(5));
+
+            agregarCaptura(detalleCapturaService, bitacoraRepository, callaoTrip, anchoveta, 420.0);
+            agregarCaptura(detalleCapturaService, bitacoraRepository, callaoTrip, caballa, 35.0);
+            agregarCaptura(detalleCapturaService, bitacoraRepository, huachoTrip, anchoveta, 230.0);
+            agregarCaptura(detalleCapturaService, bitacoraRepository, huachoTrip, bonito, 180.0);
+            agregarCaptura(detalleCapturaService, bitacoraRepository, huachoTrip, merluza, 22.0);
+            agregarCaptura(detalleCapturaService, bitacoraRepository, piscoTrip, anchoveta, 110.0);
+            agregarCaptura(detalleCapturaService, bitacoraRepository, piscoTrip, bonito, 310.0);
+            agregarCaptura(detalleCapturaService, bitacoraRepository, piscoTrip, caballa, 18.0);
+            agregarCaptura(detalleCapturaService, bitacoraRepository, activeTrip, anchoveta, 95.0);
+            agregarCaptura(detalleCapturaService, bitacoraRepository, activeTrip, merluza, 12.0);
 
             agregarGastos(gastoService, callaoTrip, 34.0, 540.0, 125.0);
             agregarGastos(gastoService, huachoTrip, 46.0, 760.0, 180.0);
             agregarGastos(gastoService, piscoTrip, 29.0, 470.0, 95.0);
             agregarGastos(gastoService, activeTrip, 18.0, 290.0, 80.0);
 
-            agregarCondicionClimatica(condicionService, callaoTrip, 18.5, 36.0, "Oleaje moderado");
-            agregarCondicionClimatica(condicionService, huachoTrip, 21.0, 17.0, "Mar tranquilo");
-            agregarCondicionClimatica(condicionService, piscoTrip, 16.5, 42.0, "Oleaje fuerte");
-            agregarCondicionClimatica(condicionService, activeTrip, 19.0, 12.0, "Mar tranquilo");
+            agregarCondicionClimatica(condicionService, bitacoraRepository, callaoTrip, 18.5, 36.0, "Oleaje moderado");
+            agregarCondicionClimatica(condicionService, bitacoraRepository, huachoTrip, 21.0, 17.0, "Mar tranquilo");
+            agregarCondicionClimatica(condicionService, bitacoraRepository, piscoTrip, 16.5, 42.0, "Oleaje fuerte");
+            agregarCondicionClimatica(condicionService, bitacoraRepository, activeTrip, 19.0, 12.0, "Mar tranquilo");
 
             agregarRecommendation(
                     recomendacionIAService, callaoTrip, "ALTO",
                     "Riesgo alto: viento fuerte e incidencia reportada.",
-                    now.minusHours(1)
+                    now
             );
             agregarRecommendation(
                     recomendacionIAService, huachoTrip, "MEDIO",
                     "Mantener vigilancia por cambios en el oleaje.",
-                    now.minusHours(3)
+                    now
             );
             agregarRecommendation(
                     recomendacionIAService, piscoTrip, "BAJO",
                     "Condiciones estables para la operación.",
-                    now.minusHours(2)
+                    now
             );
 
+            SecurityContextHolder.clearContext();
         };
     }
 
-    private static Authority crearAuthority(
-            AuthorityService authorityService,
+    private static Authority obtenerAuthority(
+            AuthorityRepository authorityRepository,
             String name) {
-        Authority authority = new Authority();
-        authority.setName(name);
-        return requireCreated(authorityService.insertar(authority), "rol " + name);
+        return requireCreated(
+                authorityRepository.findFirstByNameOrderByIdAsc(name),
+                "rol " + name + " (debe inicializarse en SecurityDataInitializer)"
+        );
     }
 
     private static User registrarUser(
@@ -340,60 +356,119 @@ public class RafishdarBackApplication {
             EspeciePezDTO species,
             TemporadaDTO season,
             double limit) {
-        CuotaPescaDTO quota = new CuotaPescaDTO();
+        CuotaPescaRequestDTO quota = new CuotaPescaRequestDTO();
         quota.setEspecieId(species.getId());
         quota.setTemporadaId(season.getId());
         quota.setLimiteToneladasIndustrial(limit);
-        requireCreated(service.insertar(quota), "cuota de " + species.getNombreComun());
+        requireCreated(service.insertarCuota(quota), "cuota de " + species.getNombreComun());
     }
 
-    private static Bitacora crearBitacoraFaena(
-            FaenaService service,
+    private static Faena crearFaenaEnCurso(
+            FaenaService faenaService,
+            BitacoraService bitacoraService,
             User owner,
             Embarcacion boat,
             ZonaPesca zone,
-            LocalDateTime departure) {
-        Bitacora trip = new Bitacora();
-        trip.setUsuario(owner);
-        trip.setEmbarcacion(boat);
-        trip.setZonaPesca(zone);
-        trip.setFechaHoraSalida(departure);
-        return requireCreated(service.insertarBitacora(trip), "bitácora");
-    }
-
-    private static void terminarBitacoraFaena(
-            FaenaService service,
-            FaenaRepository repository,
-            Bitacora trip,
             LocalDateTime departure,
-            LocalDateTime arrival,
             double latitude,
             double longitude,
             String observations) {
-        service.cambiarEstadoAEnCurso(trip.getId());
-        service.terminarBitacora(trip.getId(), observations);
-        Bitacora finished = service.buscarBitacoraPorId(trip.getId());
-        finished.setFechaHoraSalida(departure);
-        finished.setFechaHoraLlegada(arrival);
-        finished.setLatitudPesca(latitude);
-        finished.setLongitudPesca(longitude);
-        repository.save(finished);
+        Authentication previousAuthentication = SecurityContextHolder.getContext().getAuthentication();
+        autenticarComo(owner);
+        try {
+            Faena faena = crearFaenaPlanificada(faenaService, owner, boat, departure);
+            faenaService.cambiarEstadoAEnCurso(faena.getId());
+            registrarBitacora(bitacoraService, owner, faena, zone, latitude, longitude, observations);
+            return faena;
+        } finally {
+            restaurarAutenticacion(previousAuthentication);
+        }
+    }
+
+    private static Faena crearFaenaPlanificada(
+            FaenaService service,
+            User owner,
+            Embarcacion boat,
+            LocalDateTime departure) {
+        Authentication previousAuthentication = SecurityContextHolder.getContext().getAuthentication();
+        autenticarComo(owner);
+        try {
+            FaenaRequestDTO request = new FaenaRequestDTO();
+            request.setEmbarcacionId(boat.getId());
+            request.setFechaHoraSalidaProgramada(departure);
+            request.setFechaHoraLlegadaEstimada(departure.plusHours(4));
+            return requireCreated(service.insertarFaena(request), "faena de " + owner.getEmail());
+        } finally {
+            restaurarAutenticacion(previousAuthentication);
+        }
+    }
+
+    private static void registrarBitacora(
+            BitacoraService service,
+            User owner,
+            Faena faena,
+            ZonaPesca zone,
+            double latitude,
+            double longitude,
+            String observations) {
+        Authentication previousAuthentication = SecurityContextHolder.getContext().getAuthentication();
+        autenticarComo(owner);
+        try {
+            BitacoraRequestDTO request = new BitacoraRequestDTO();
+            request.setFaenaId(faena.getId());
+            request.setZonaPescaId(zone.getId());
+            request.setLatitud(latitude);
+            request.setLongitud(longitude);
+            request.setObservaciones(observations);
+            requireCreated(service.insertarBitacora(request), "bitácora de la faena " + faena.getId());
+        } finally {
+            restaurarAutenticacion(previousAuthentication);
+        }
+    }
+
+    private static void finalizarFaena(FaenaService service, User owner, Faena faena) {
+        Authentication previousAuthentication = SecurityContextHolder.getContext().getAuthentication();
+        autenticarComo(owner);
+        try {
+            service.terminarFaena(faena.getId(), false, null);
+        } finally {
+            restaurarAutenticacion(previousAuthentication);
+        }
+    }
+
+    private static void autenticarComo(User user) {
+        UserSecurity userSecurity = new UserSecurity(user);
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        userSecurity, null, userSecurity.getAuthorities()));
+    }
+
+    private static void restaurarAutenticacion(Authentication authentication) {
+        if (authentication == null) {
+            SecurityContextHolder.clearContext();
+        } else {
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+        }
     }
 
     private static void agregarCaptura(
             DetalleCapturaService service,
-            Bitacora trip,
+            BitacoraRepository bitacoraRepository,
+            Faena faena,
             EspeciePezDTO species,
             double volumeKg) {
+        Bitacora bitacora = bitacoraRepository
+                .findFirstByFaenaIdOrderByFechaHoraRegistroDesc(faena.getId())
+                .orElseThrow();
         DetalleCapturaRequestDTO capture = new DetalleCapturaRequestDTO();
-        capture.setIdEspecie(species.getId());
+        capture.setEspecieId(species.getId());
         capture.setVolumenKg(volumeKg);
-        service.insertarCaptura(trip.getId(), capture);
+        service.insertarCaptura(bitacora.getId(), capture);
     }
 
     private static void agregarGastos(
             GastoOperativoService service,
-            Bitacora trip,
+            Faena faena,
             double fuelGallons,
             double fuelCost,
             double suppliesCost) {
@@ -401,12 +476,13 @@ public class RafishdarBackApplication {
         expenses.setGalonesCombustible(fuelGallons);
         expenses.setCostoCombustible(fuelCost);
         expenses.setCostoHieloInsumos(suppliesCost);
-        service.insertarGasto(trip.getId(), expenses);
+        service.insertarGasto(faena.getId(), expenses);
     }
 
     private static void agregarCondicionClimatica(
             CondicionClimaticaService service,
-            Bitacora trip,
+            BitacoraRepository bitacoraRepository,
+            Faena faena,
             double temperature,
             double windSpeed,
             String waveState) {
@@ -414,18 +490,20 @@ public class RafishdarBackApplication {
         dto.setTemperaturaCelsius(temperature);
         dto.setVelocidadVientoNudos(windSpeed);
         dto.setEstadoOleaje(waveState);
-        service.insertarCondicionesPorBitacora(trip.getId(), dto);
+        Bitacora bitacora = bitacoraRepository.findFirstByFaenaIdOrderByFechaHoraRegistroDesc(faena.getId())
+                .orElseThrow();
+        service.insertarCondicionesPorBitacora(bitacora.getId(), dto);
 
     }
 
     private static void agregarRecommendation(
             RecomendacionIAService service,
-            Bitacora trip,
+            Faena faena,
             String risk,
             String analysis,
             LocalDateTime generatedAt) {
         RecomendacionIA recommendation = new RecomendacionIA();
-        recommendation.setBitacora(trip);
+        recommendation.setFaena(faena);
         recommendation.setNivelRiesgo(risk);
         recommendation.setAnalisisTexto(analysis);
         recommendation.setFechaGeneracion(generatedAt);

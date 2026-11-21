@@ -1,16 +1,27 @@
 package pe.edu.upc.rafishdar_back.serviceimpl;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import pe.edu.upc.rafishdar_back.entities.Bitacora;
 import pe.edu.upc.rafishdar_back.entities.CondicionClimatica;
+import pe.edu.upc.rafishdar_back.entities.Faena;
 import pe.edu.upc.rafishdar_back.entities.RecomendacionIA;
-import pe.edu.upc.rafishdar_back.repositories.FaenaRepository;
+import pe.edu.upc.rafishdar_back.entities.User;
+import pe.edu.upc.rafishdar_back.exceptions.BadRequestException;
+import pe.edu.upc.rafishdar_back.exceptions.ConflictException;
+import pe.edu.upc.rafishdar_back.exceptions.ResourceNotFoundException;
 import pe.edu.upc.rafishdar_back.repositories.CondicionClimaticaRepository;
+import pe.edu.upc.rafishdar_back.repositories.FaenaRepository;
 import pe.edu.upc.rafishdar_back.repositories.RecomendacionIARepository;
+import pe.edu.upc.rafishdar_back.repositories.UserRepository;
 import pe.edu.upc.rafishdar_back.services.RecomendacionIAService;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -20,9 +31,20 @@ public class RecomendacionIAServiceImpl implements RecomendacionIAService {
 
     private static final Set<String> NIVELES_VALIDOS = Set.of("BAJO", "MEDIO", "ALTO");
 
-    @Autowired private RecomendacionIARepository recomendacionIARepository;
-    @Autowired private FaenaRepository bitacoraFaenaRepository;
-    @Autowired private CondicionClimaticaRepository condicionClimaticaRepository;
+    @Autowired
+    private RecomendacionIARepository recomendacionIARepository;
+
+    @Autowired
+    private FaenaRepository faenaRepository;
+
+    @Autowired
+    private CondicionClimaticaRepository condicionClimaticaRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private FaenaAuthorizationService autorizacionFaena;
 
     @Override
     public List<RecomendacionIA> listarTodoRecomendaciones() {
@@ -31,246 +53,240 @@ public class RecomendacionIAServiceImpl implements RecomendacionIAService {
 
     @Override
     public RecomendacionIA insertarRecomendaciones(RecomendacionIA recomendacionIA) {
-        // Toda inserción directa pasa por la validación BN-24
+        if (recomendacionIA == null || recomendacionIA.getFaena() == null ||
+                recomendacionIA.getFaena().getId() == null) {
+            throw new BadRequestException("La recomendación debe asociarse a una faena");
+        }
         validarNivelRiesgo(recomendacionIA.getNivelRiesgo());
+        Faena faena = faenaRepository.findById(recomendacionIA.getFaena().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Faena no encontrada"));
+        autorizacionFaena.validarAcceso(faena, true);
+        if (recomendacionIARepository.existsByFaenaId(faena.getId())) {
+            throw new ConflictException("La faena ya tiene una recomendación");
+        }
+        recomendacionIA.setFaena(faena);
+        if (recomendacionIA.getFechaGeneracion() == null) {
+            recomendacionIA.setFechaGeneracion(LocalDateTime.now());
+        }
         return recomendacionIARepository.save(recomendacionIA);
     }
 
     @Override
     public RecomendacionIA actualizarRecomendaciones(RecomendacionIA recomendacionIA) {
-        RecomendacionIA encontrada = buscarPorId(recomendacionIA.getId());
-        if (encontrada == null) return null;
-
-        if (recomendacionIA.getAnalisisTexto() != null)
+        if (recomendacionIA == null || recomendacionIA.getId() == null) {
+            throw new BadRequestException("El ID y los datos de actualización son obligatorios");
+        }
+        RecomendacionIA encontrada = recomendacionIARepository.findById(recomendacionIA.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Recomendación no encontrada"));
+        autorizacionFaena.validarAcceso(encontrada.getFaena(), true);
+        if (recomendacionIA.getAnalisisTexto() != null) {
+            if (recomendacionIA.getAnalisisTexto().isBlank()) {
+                throw new BadRequestException("El análisis no puede estar vacío");
+            }
             encontrada.setAnalisisTexto(recomendacionIA.getAnalisisTexto());
-
+        }
         if (recomendacionIA.getNivelRiesgo() != null) {
             validarNivelRiesgo(recomendacionIA.getNivelRiesgo());
-            encontrada.setNivelRiesgo(recomendacionIA.getNivelRiesgo());
+            encontrada.setNivelRiesgo(recomendacionIA.getNivelRiesgo().trim().toUpperCase());
         }
-
-        if (recomendacionIA.getFechaGeneracion() != null)
+        if (recomendacionIA.getFechaGeneracion() != null) {
             encontrada.setFechaGeneracion(recomendacionIA.getFechaGeneracion());
-
-        // BN-23: la referencia a bitácora no se cambia en un update
+        }
         return recomendacionIARepository.save(encontrada);
     }
 
     @Override
     public RecomendacionIA buscarPorId(Long id) {
-        return recomendacionIARepository.findById(id).orElse(null);
+        if (id == null) {
+            throw new BadRequestException("El ID de la recomendación es obligatorio");
+        }
+        RecomendacionIA recommendation = recomendacionIARepository.findById(id).orElse(null);
+        if (recommendation != null) {
+            autorizacionFaena.validarAcceso(recommendation.getFaena(), false);
+        }
+        return recommendation;
     }
 
     @Override
     public Boolean eliminarRecomendaciones(Long id) {
         RecomendacionIA encontrada = buscarPorId(id);
-        if (encontrada == null) return false;
-        recomendacionIARepository.deleteById(id);
+        if (encontrada == null) {
+            return false;
+        }
+        autorizacionFaena.validarAcceso(encontrada.getFaena(), true);
+        recomendacionIARepository.delete(encontrada);
         return true;
     }
 
-
-    // --- Métodos adicionales ---
-
-    /**
-     * US-24, BN-23, BN-25: Genera la recomendación IA para una bitácora.
-     * Construye el contexto disponible sin inventar datos.
-     * Si ya existe una recomendación para esa bitácora, lanza excepción:
-     * el pescador debe usar regenerarParaBitacora (US-26).
-     */
-
     @Override
-    public RecomendacionIA generarParaBitacora(Long bitacoraId, Long usuarioId) {
-        // BN-23: bloquear doble generación
-        if (recomendacionIARepository.existsByBitacoraId(bitacoraId)) {
-            throw new IllegalStateException(
-                    "Ya existe una recomendación para esta faena. Use regenerar para actualizarla."
-            );
+    public RecomendacionIA generarParaBitacora(Long faenaId, Long usuarioId) {
+        validarIdYUsuario(faenaId, usuarioId);
+        Faena faena = obtenerFaenaValidada(faenaId, usuarioId);
+        if (recomendacionIARepository.existsByFaenaId(faenaId)) {
+            throw new ConflictException("Ya existe una recomendación para esta faena. Use regenerar para actualizarla.");
         }
-
-        Bitacora bitacora = obtenerBitacoraValidada(bitacoraId, usuarioId);
-        String prompt = construirPrompt(bitacora);
-
-        // --- Llamada al servicio de IA ---
-        // TODO: integrar cliente HTTP real (OpenAI / Anthropic / etc.)
-        // El siguiente bloque es el contrato que debe cumplir la integración:
-        //   - String respuestaIA = clienteIA.solicitar(prompt);
-        //   - String nivelRiesgo = parsearNivel(respuestaIA);   // BN-24
-        //   - String analisis    = parsearAnalisis(respuestaIA);
-        // Por ahora se usa un placeholder que el equipo reemplazará:
-        String nivelRiesgoObtenido = "MEDIO";   // reemplazar con parseo real
-        String analisisObtenido    = "Contexto enviado a IA: " + prompt; // reemplazar
-
-        validarNivelRiesgo(nivelRiesgoObtenido); // BN-24
-
-        RecomendacionIA nueva = new RecomendacionIA();
-        nueva.setBitacora(bitacora);
-        nueva.setNivelRiesgo(nivelRiesgoObtenido);
-        nueva.setAnalisisTexto(analisisObtenido);
-        nueva.setFechaGeneracion(LocalDateTime.now());
-
-        return recomendacionIARepository.save(nueva);
-    }
-
-
-    /**
-     * US-26, BN-23: Regenera la recomendación actualizando el registro 1:1.
-     * Si no existe, crea uno nuevo (primera generación equivalente).
-     * Actualiza fechaGeneracion con el momento actual.
-     */
-    @Override
-    public RecomendacionIA regenerarParaBitacora(Long bitacoraId, Long usuarioId) {
-        Bitacora bitacora = obtenerBitacoraValidada(bitacoraId, usuarioId);
-        String prompt = construirPrompt(bitacora);
-
-        // --- Llamada al servicio de IA (mismo contrato que generarParaBitacora) ---
-        String nivelRiesgoObtenido = "MEDIO";   // reemplazar con parseo real
-        String analisisObtenido    = "Contexto enviado a IA: " + prompt; // reemplazar
-
-        validarNivelRiesgo(nivelRiesgoObtenido); // BN-24
-
-        // BN-23: upsert — actualizar si existe, crear si no
-        Optional<RecomendacionIA> existente =
-                recomendacionIARepository.findByBitacoraId(bitacoraId);
-
-        if (existente.isPresent()) {
-            RecomendacionIA actual = existente.get();
-            actual.setNivelRiesgo(nivelRiesgoObtenido);
-            actual.setAnalisisTexto(analisisObtenido);
-            actual.setFechaGeneracion(LocalDateTime.now()); // US-26: actualiza timestamp
-            return recomendacionIARepository.save(actual);
-        }
-
-        RecomendacionIA nueva = new RecomendacionIA();
-        nueva.setBitacora(bitacora);
-        nueva.setNivelRiesgo(nivelRiesgoObtenido);
-        nueva.setAnalisisTexto(analisisObtenido);
-        nueva.setFechaGeneracion(LocalDateTime.now());
-        return recomendacionIARepository.save(nueva);
-    }
-
-
-    /**
-     * US-25, BN-12 aplicado a IA: consulta validando que el usuario
-     * sea propietario de la bitácora.
-     * Devuelve Optional vacío si no es el propietario o no existe.
-     */
-    @Override
-    public Optional<RecomendacionIA> consultarPorBitacoraConPermisoUsuario(Long bitacoraId, Long usuarioId) {
-        return recomendacionIARepository.findByBitacoraIdAndUsuarioId(bitacoraId, usuarioId);
-    }
-
-    /**
-     * US-25: consulta sin validación de propietario.
-     * Para Admin y Técnico.
-     * Si no existe devuelve Optional vacío (US-25: mostrar estado vacío claro).
-     */
-    @Override
-    public Optional<RecomendacionIA> consultarPorBitacora(Long bitacoraId) {
-        return recomendacionIARepository.findByBitacoraId(bitacoraId);
+        return crearRecomendacion(faena);
     }
 
     @Override
-    public boolean existeRecomendacionParaBitacora(Long bitacoraId) {
-        return recomendacionIARepository.existsByBitacoraId(bitacoraId);
+    public RecomendacionIA regenerarParaBitacora(Long faenaId, Long usuarioId) {
+        validarIdYUsuario(faenaId, usuarioId);
+        Faena faena = obtenerFaenaValidada(faenaId, usuarioId);
+        RecomendacionIA recomendacion = recomendacionIARepository.findByFaenaId(faenaId)
+                .orElseGet(() -> {
+                    RecomendacionIA nueva = new RecomendacionIA();
+                    nueva.setFaena(faena);
+                    return nueva;
+                });
+        completarRecomendacion(recomendacion, faena);
+        return recomendacionIARepository.save(recomendacion);
+    }
+
+    @Override
+    public Optional<RecomendacionIA> consultarPorBitacoraConPermisoUsuario(Long faenaId, Long usuarioId) {
+        validarIdYUsuario(faenaId, usuarioId);
+        obtenerFaenaValidada(faenaId, usuarioId);
+        return recomendacionIARepository.findByFaenaIdAndUsuarioId(faenaId, usuarioId);
+    }
+
+    @Override
+    public Optional<RecomendacionIA> consultarPorBitacora(Long faenaId) {
+        validarFaenaId(faenaId);
+        Faena faena = faenaRepository.findById(faenaId)
+                .orElseThrow(() -> new ResourceNotFoundException("Faena no encontrada"));
+        autorizacionFaena.validarAcceso(faena, false);
+        return recomendacionIARepository.findByFaenaId(faenaId);
+    }
+
+    @Override
+    public boolean existeRecomendacionParaBitacora(Long faenaId) {
+        return faenaId != null && recomendacionIARepository.existsByFaenaId(faenaId);
     }
 
     @Override
     public List<RecomendacionIA> listarUltimasPorUsuario(Long usuarioId) {
+        if (usuarioId == null) {
+            throw new BadRequestException("El ID del usuario es obligatorio");
+        }
+        autorizacionFaena.validarAccesoUsuario(usuarioId);
         return recomendacionIARepository.findUltimasByUsuario(usuarioId);
     }
 
     @Override
     public List<RecomendacionIA> listarAltoRiesgoRecientes(int horas) {
-        if (horas <= 0) throw new IllegalArgumentException("Las horas deben ser positivas");
-        LocalDateTime desde = LocalDateTime.now().minusHours(horas);
-        return recomendacionIARepository.findRecomendacionesAltoRiesgoDesde(desde);
+        if (horas <= 0) {
+            throw new BadRequestException("Las horas deben ser positivas");
+        }
+        return recomendacionIARepository.findRecomendacionesAltoRiesgoDesde(
+                LocalDateTime.now().minusHours(horas));
     }
 
-    /**
-     * US-34: conteo de recomendaciones por nivel de riesgo para un usuario.
-     * Permite al dashboard mostrar: X faenas con riesgo ALTO, Y con MEDIO, etc.
-     */
     @Override
     public long contarPorNivelRiesgoYUsuario(String nivelRiesgo, Long usuarioId) {
         validarNivelRiesgo(nivelRiesgo);
-        return recomendacionIARepository
-                .countByNivelRiesgoAndBitacoraUsuarioId(nivelRiesgo, usuarioId);
+        if (usuarioId == null) {
+            throw new BadRequestException("El ID del usuario es obligatorio");
+        }
+        autorizacionFaena.validarAccesoUsuario(usuarioId);
+        return recomendacionIARepository.countByNivelRiesgoAndFaenaUsuarioId(
+                nivelRiesgo.trim().toUpperCase(), usuarioId);
     }
 
-    // --- Métodos privados de apoyo ---
+    private RecomendacionIA crearRecomendacion(Faena faena) {
+        RecomendacionIA recomendacion = new RecomendacionIA();
+        recomendacion.setFaena(faena);
+        completarRecomendacion(recomendacion, faena);
+        return recomendacionIARepository.save(recomendacion);
+    }
 
-    /**
-     * BN-24: valida que el nivel de riesgo sea uno de los tres valores aceptados.
-     * Cualquier valor externo (incluyendo el devuelto por la IA) pasa por aquí.
-     */
+    private void completarRecomendacion(RecomendacionIA recomendacion, Faena faena) {
+        String prompt = construirPrompt(faena);
+        // Sustituir estos valores cuando se integre el cliente real de IA.
+        recomendacion.setNivelRiesgo("MEDIO");
+        recomendacion.setAnalisisTexto("Contexto enviado a IA: " + prompt);
+        recomendacion.setFechaGeneracion(LocalDateTime.now());
+    }
+
     private void validarNivelRiesgo(String nivelRiesgo) {
-        if (nivelRiesgo == null || !NIVELES_VALIDOS.contains(nivelRiesgo.toUpperCase())) {
-            throw new IllegalArgumentException(
-                    "Nivel de riesgo inválido: '" + nivelRiesgo
-                            + "'. Valores aceptados: BAJO, MEDIO, ALTO"
-            );
+        if (nivelRiesgo == null || !NIVELES_VALIDOS.contains(nivelRiesgo.trim().toUpperCase())) {
+            throw new BadRequestException("Nivel de riesgo inválido. Valores aceptados: BAJO, MEDIO, ALTO");
         }
     }
 
-    /**
-     * BN-03 aplicado a IA: valida que la bitácora exista y pertenezca al usuario.
-     * Lanza excepción controlada si no se cumplen las condiciones.
-     */
-    private Bitacora obtenerBitacoraValidada(Long bitacoraId, Long usuarioId) {
-        Bitacora bitacora = bitacoraFaenaRepository
-                .findById(bitacoraId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "La bitácora con id " + bitacoraId + " no existe"
-                ));
-
-        if (!bitacora.getUsuario().getId().equals(usuarioId)) {
-            throw new SecurityException(
-                    "El usuario no tiene permiso para operar sobre esta bitácora"
-            );
+    private void validarIdYUsuario(Long faenaId, Long usuarioId) {
+        validarFaenaId(faenaId);
+        if (usuarioId == null) {
+            throw new BadRequestException("El ID del usuario es obligatorio");
         }
-
-        return bitacora;
     }
 
-    /**
-     * BN-25: construye el prompt para la IA con los datos disponibles.
-     * No inventa valores. Documenta explícitamente qué información falta.
-     */
-    private String construirPrompt(Bitacora bitacora) {
+    private void validarFaenaId(Long faenaId) {
+        if (faenaId == null) {
+            throw new BadRequestException("El ID de la faena es obligatorio");
+        }
+    }
+
+    private Faena obtenerFaenaValidada(Long faenaId, Long usuarioId) {
+        Faena faena = faenaRepository.findById(faenaId)
+                .orElseThrow(() -> new ResourceNotFoundException("Faena no encontrada"));
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() ||
+                "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new AuthenticationCredentialsNotFoundException("Se requiere una sesión autenticada");
+        }
+        User autenticado = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario autenticado no encontrado"));
+        boolean esAdmin = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ADMIN".equals(authority.getAuthority()));
+        boolean esPescador = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "PESCADOR".equals(authority.getAuthority()));
+        if (!esAdmin && (!esPescador || faena.getUsuario() == null ||
+                !faena.getUsuario().getId().equals(autenticado.getId()) ||
+                !faena.getUsuario().getId().equals(usuarioId))) {
+            throw new AccessDeniedException("No tiene permiso para operar sobre esta faena");
+        }
+        return faena;
+    }
+
+    private String construirPrompt(Faena faena) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Faena ID: ").append(bitacora.getId()).append("\n");
+        sb.append("Faena ID: ").append(faena.getId()).append('\n');
 
-        if (bitacora.getZonaPesca() != null) {
-            sb.append("Zona: ").append(bitacora.getZonaPesca().getNombreZona())
+        Bitacora ultimaBitacora = null;
+        if (faena.getBitacoras() != null) {
+            ultimaBitacora = faena.getBitacoras().stream()
+                    .filter(bitacora -> bitacora.getFechaHoraRegistro() != null)
+                    .max(Comparator.comparing(Bitacora::getFechaHoraRegistro))
+                    .orElse(null);
+        }
+        if (ultimaBitacora != null && ultimaBitacora.getZonaPesca() != null) {
+            sb.append("Zona: ").append(ultimaBitacora.getZonaPesca().getNombreZona())
                     .append(", distancia a costa: ")
-                    .append(bitacora.getZonaPesca().getDistanciaCostaKm()).append(" km\n");
+                    .append(ultimaBitacora.getZonaPesca().getDistanciaCostaKm()).append(" km\n");
         } else {
             sb.append("Zona: sin datos disponibles\n");
         }
 
-        if (bitacora.getFechaHoraSalida() != null) {
-            sb.append("Fecha/hora salida: ").append(bitacora.getFechaHoraSalida()).append("\n");
+        if (faena.getFechaHoraSalida() != null) {
+            sb.append("Fecha/hora salida: ").append(faena.getFechaHoraSalida()).append('\n');
         } else {
             sb.append("Fecha/hora salida: sin datos disponibles\n");
         }
 
-        Optional<CondicionClimatica> condicion =
-                condicionClimaticaRepository.findByBitacoraId(bitacora.getId());
-
+        Optional<CondicionClimatica> condicion = ultimaBitacora == null
+                ? Optional.empty()
+                : condicionClimaticaRepository.findByBitacoraId(ultimaBitacora.getId());
         if (condicion.isPresent()) {
-            CondicionClimatica c = condicion.get();
-            sb.append("Temperatura: ").append(c.getTemperaturaCelsius()).append(" °C\n");
-            sb.append("Viento: ").append(c.getVelocidadVientoNudos()).append(" nudos\n");
-            sb.append("Oleaje: ").append(c.getEstadoOleaje()).append("\n");
+            CondicionClimatica clima = condicion.get();
+            sb.append("Temperatura: ").append(clima.getTemperaturaCelsius()).append(" °C\n");
+            sb.append("Viento: ").append(clima.getVelocidadVientoNudos()).append(" nudos\n");
+            sb.append("Oleaje: ").append(clima.getEstadoOleaje()).append('\n');
         } else {
             sb.append("Condición climática: sin registro disponible\n");
         }
-
-        sb.append("Genera un análisis breve de riesgo para esta faena de pesca. ")
-                .append("Responde ÚNICAMENTE con un JSON: ")
-                .append("{\"nivelRiesgo\": \"BAJO|MEDIO|ALTO\", \"analisis\": \"texto\"}");
-
-        return sb.toString();
+        return sb.append("Genera un análisis breve de riesgo para esta faena. ")
+                .append("Responde únicamente con un JSON: ")
+                .append("{\"nivelRiesgo\": \"BAJO|MEDIO|ALTO\", \"analisis\": \"texto\"}")
+                .toString();
     }
 }

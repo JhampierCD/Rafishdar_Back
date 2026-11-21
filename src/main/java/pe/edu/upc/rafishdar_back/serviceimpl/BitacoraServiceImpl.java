@@ -1,28 +1,32 @@
 package pe.edu.upc.rafishdar_back.serviceimpl;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import pe.edu.upc.rafishdar_back.dtos.CondicionClimaticaDTO;
 import pe.edu.upc.rafishdar_back.dtos.bitacora.BitacoraDTO;
 import pe.edu.upc.rafishdar_back.dtos.bitacora.BitacoraRequestDTO;
 import pe.edu.upc.rafishdar_back.dtos.bitacora.BitacoraUpdateDTO;
-import pe.edu.upc.rafishdar_back.dtos.detalle_captura.DetalleCapturaDTO;
 import pe.edu.upc.rafishdar_back.entities.Bitacora;
 import pe.edu.upc.rafishdar_back.entities.Faena;
+import pe.edu.upc.rafishdar_back.entities.User;
 import pe.edu.upc.rafishdar_back.entities.ZonaPesca;
 import pe.edu.upc.rafishdar_back.exceptions.BadRequestException;
-import pe.edu.upc.rafishdar_back.exceptions.DuplicateResourceException;
+import pe.edu.upc.rafishdar_back.exceptions.ConflictException;
 import pe.edu.upc.rafishdar_back.exceptions.ResourceNotFoundException;
 import pe.edu.upc.rafishdar_back.repositories.BitacoraRepository;
-import pe.edu.upc.rafishdar_back.repositories.DetalleCapturaRepository;
+import pe.edu.upc.rafishdar_back.repositories.CondicionClimaticaRepository;
 import pe.edu.upc.rafishdar_back.repositories.FaenaRepository;
+import pe.edu.upc.rafishdar_back.repositories.UserRepository;
 import pe.edu.upc.rafishdar_back.repositories.ZonaPescaRepository;
 import pe.edu.upc.rafishdar_back.services.BitacoraService;
-import pe.edu.upc.rafishdar_back.services.DetalleCapturaService;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -38,7 +42,10 @@ public class BitacoraServiceImpl implements BitacoraService {
     FaenaRepository faenaRepository;
 
     @Autowired
-    DetalleCapturaService capturaService;
+    UserRepository userRepository;
+
+    @Autowired
+    CondicionClimaticaRepository condicionClimaticaRepository;
 
     @Override
     public List<Bitacora> listarTodo() {
@@ -69,6 +76,10 @@ public class BitacoraServiceImpl implements BitacoraService {
 
     @Override
     public Bitacora insertarBitacora(BitacoraRequestDTO request) {
+        if (request == null) {
+            throw new BadRequestException("Los datos de la bitácora son obligatorios");
+        }
+
         if (request.getFaenaId() == null){
             throw new BadRequestException("El ID de la faena es obligatorio");
         }
@@ -76,8 +87,26 @@ public class BitacoraServiceImpl implements BitacoraService {
         Faena foundFaena = faenaRepository.findById(request.getFaenaId())
                 .orElseThrow(() -> new ResourceNotFoundException("Faena no encontrada"));
 
+        validarAccesoAFaena(foundFaena);
+
         if (!validarFaenaEnCurso(foundFaena)){
-            throw new BadRequestException("No se puede insertar una bitácora en una faena que no esté en curso");
+            throw new ConflictException("No se puede insertar una bitácora en una faena que no esté en curso");
+        }
+
+        if ((request.getLatitud() == null) != (request.getLongitud() == null)) {
+            throw new BadRequestException("La latitud y longitud deben ingresarse juntas");
+        }
+
+        if (request.getLatitud() != null &&
+                (!Double.isFinite(request.getLatitud()) ||
+                        request.getLatitud() < -90 || request.getLatitud() > 90)) {
+            throw new BadRequestException("La latitud debe estar entre -90 y 90");
+        }
+
+        if (request.getLongitud() != null &&
+                (!Double.isFinite(request.getLongitud()) ||
+                        request.getLongitud() < -180 || request.getLongitud() > 180)) {
+            throw new BadRequestException("La longitud debe estar entre -180 y 180");
         }
 
         ZonaPesca zonaAsignada;
@@ -113,25 +142,56 @@ public class BitacoraServiceImpl implements BitacoraService {
 
     @Override
     public Bitacora buscarBitacoraPorId(Long id) {
-        return bitacoraRepository.findById(id).orElse(null);
+        if (id == null) {
+            throw new BadRequestException("El ID de la bitácora es obligatorio");
+        }
+
+        return bitacoraRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Bitácora no encontrada"));
     }
 
     @Override
-    public Bitacora actualizarBitacora(BitacoraUpdateDTO request) {
-        Bitacora foundBitacora = buscarBitacoraPorId(request.getId());
-
-        if (foundBitacora == null){
-            throw new ResourceNotFoundException("Bitacora no encontrada. No se puede actualizar");
+    public Bitacora actualizarBitacora(Long idBitacora, BitacoraUpdateDTO request) {
+        if (request == null) {
+            throw new BadRequestException("Los datos de actualización son obligatorios");
         }
 
-        if (!validarFaenaEnCurso(foundBitacora.getFaena())){
-            throw new BadRequestException("No se puede actualizar una bitácora de una faena que no esté en curso");
+        Bitacora foundBitacora = buscarBitacoraPorId(idBitacora);
+
+        validarAccesoAFaena(foundBitacora.getFaena());
+
+        if (!validarFaenaEnCurso(foundBitacora.getFaena())) {
+            throw new ConflictException("No se puede actualizar una bitácora de una faena que no esté en curso");
+        }
+
+        if (request.getLatitud() == null &&
+                request.getLongitud() == null &&
+                request.getObservaciones() == null &&
+                request.getZonaPescaId() == null) {
+            throw new BadRequestException("Debe ingresar al menos un dato para actualizar");
+        }
+
+        if ((request.getLatitud() == null) != (request.getLongitud() == null)) {
+            throw new BadRequestException("La latitud y longitud deben ingresarse juntas");
+        }
+
+        if (request.getLatitud() != null &&
+                (!Double.isFinite(request.getLatitud()) ||
+                        request.getLatitud() < -90 || request.getLatitud() > 90)) {
+            throw new BadRequestException("La latitud debe estar entre -90 y 90");
+        }
+
+        if (request.getLongitud() != null &&
+                (!Double.isFinite(request.getLongitud()) ||
+                        request.getLongitud() < -180 || request.getLongitud() > 180)) {
+            throw new BadRequestException("La longitud debe estar entre -180 y 180");
         }
 
         if (request.getLatitud() != null) foundBitacora.setLatitudPesca(request.getLatitud());
         if (request.getLongitud() != null) foundBitacora.setLongitudPesca(request.getLongitud());
         if (request.getObservaciones() != null) foundBitacora.setObservaciones(request.getObservaciones());
-        if (request.getZonaPescaId() != null){
+
+        if (request.getZonaPescaId() != null) {
             ZonaPesca foundZona = zonaPescaRepository.findById(request.getZonaPescaId())
                     .orElseThrow(() -> new ResourceNotFoundException("Zona Pesca no encontrada"));
             foundBitacora.setZonaPesca(foundZona);
@@ -141,26 +201,26 @@ public class BitacoraServiceImpl implements BitacoraService {
     }
 
     @Override
-    public void eliminarBitacora(Long id) {
-        if (id == null || !bitacoraRepository.existsById(id)){
-            throw new ResourceNotFoundException("Bitacora no encontrada. No se puede eliminar");
-        }
-
+    public Boolean eliminarBitacora(Long id) {
         Bitacora foundBitacora = buscarBitacoraPorId(id);
 
-        if (!validarFaenaEnCurso(foundBitacora.getFaena())){
-            throw new BadRequestException("No se puede eliminar una bitácora de una faena que no esté en curso");
+        validarAccesoAFaena(foundBitacora.getFaena());
+
+        if (!validarFaenaEnCurso(foundBitacora.getFaena())) {
+            throw new ConflictException("No se puede eliminar una bitácora de una faena que no esté en curso");
         }
 
-        bitacoraRepository.deleteById(id);
+        if (condicionClimaticaRepository.existsByBitacoraId(id)) {
+            throw new ConflictException("No se puede eliminar la bitácora porque tiene una condición climática asociada");
+        }
+
+        bitacoraRepository.delete(foundBitacora);
+        return true;
     }
 
     @Override
     public Boolean validarFaenaEnCurso(Faena faena) {
-        if (!"En curso".equalsIgnoreCase(faena.getEstado())) {
-            return false; // La faena no está en curso
-        }
-        return true; // La faena está en curso
+        return faena != null && "En curso".equalsIgnoreCase(faena.getEstado());
     }
 
     @Override
@@ -174,6 +234,16 @@ public class BitacoraServiceImpl implements BitacoraService {
 
         ZonaPesca zona = bitacora.getZonaPesca();
 
+        if (zona == null || zona.getLatitud() == null ||
+                zona.getLongitud() == null || zona.getRadioAreaKm() == null ||
+                !esLatitudValida(zona.getLatitud()) ||
+                !esLongitudValida(zona.getLongitud()) ||
+                !Double.isFinite(zona.getRadioAreaKm()) || zona.getRadioAreaKm() <= 0 ||
+                !esLatitudValida(bitacora.getLatitudPesca()) ||
+                !esLongitudValida(bitacora.getLongitudPesca())) {
+            throw new BadRequestException("No se puede verificar el desvío porque faltan datos de la zona de pesca");
+        }
+
         // Constante del radio de la Tierra en Kilómetros
         final int R = 6371;
 
@@ -184,6 +254,8 @@ public class BitacoraServiceImpl implements BitacoraService {
         double a = Math.sin(latDistancia / 2) * Math.sin(latDistancia / 2)
                 + Math.cos(Math.toRadians(bitacora.getLatitudPesca())) * Math.cos(Math.toRadians(zona.getLatitud()))
                 * Math.sin(lonDistancia / 2) * Math.sin(lonDistancia / 2);
+
+        a = Math.clamp(a, 0.0, 1.0);
 
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
@@ -196,8 +268,70 @@ public class BitacoraServiceImpl implements BitacoraService {
     // --- MÉTODOS INNOVADORES ---
 
     public Boolean hayAlertaDeIncidenciasEnZona(Long idZona, String keyword) {
-        LocalDateTime hace48Horas = LocalDateTime.now().minusHours(48);
-        List<Bitacora> incidencias = bitacoraRepository.detectarIncidenciasRecientesEnZona(idZona, hace48Horas, keyword);
+        if (idZona == null) {
+            throw new BadRequestException("El ID de la zona es obligatorio");
+        }
+
+        if (keyword == null || keyword.isBlank()) {
+            throw new BadRequestException("La palabra clave es obligatoria");
+        }
+
+        User usuarioAutenticado = obtenerUsuarioAutenticado();
+        zonaPescaRepository.findById(idZona)
+                .orElseThrow(() -> new ResourceNotFoundException("Zona de pesca no encontrada"));
+
+        LocalDateTime ahora = LocalDateTime.now();
+        LocalDateTime hace48Horas = ahora.minusHours(48);
+        List<Bitacora> incidencias = bitacoraRepository.detectarIncidenciasRecientesEnZona(
+                idZona, hace48Horas, ahora, keyword, usuarioAutenticado.getId());
         return !incidencias.isEmpty(); // Retorna true si detectó palabras de peligro
+    }
+
+    private void validarAccesoAFaena(Faena faena) {
+        User usuario = obtenerUsuarioAutenticado();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        boolean esAdmin = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ADMIN".equals(authority.getAuthority()));
+        if (esAdmin) {
+            return;
+        }
+
+        boolean esPescador = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "PESCADOR".equals(authority.getAuthority()));
+        if (!esPescador) {
+            throw new AccessDeniedException("No tiene permiso para gestionar bitácoras");
+        }
+
+        if (faena == null || faena.getUsuario() == null ||
+                !Objects.equals(faena.getUsuario().getId(), usuario.getId())) {
+            throw new AccessDeniedException("No puede gestionar bitácoras de una faena ajena");
+        }
+    }
+
+    private User obtenerUsuarioAutenticado() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated() ||
+                "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new AuthenticationCredentialsNotFoundException("Se requiere una sesión autenticada");
+        }
+
+        boolean tienePermisoBitacora = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "ADMIN".equals(authority.getAuthority()) ||
+                        "PESCADOR".equals(authority.getAuthority()));
+        if (!tienePermisoBitacora) {
+            throw new AccessDeniedException("No tiene permiso para gestionar bitácoras");
+        }
+
+        return userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario autenticado no encontrado"));
+    }
+
+    private boolean esLatitudValida(Double latitud) {
+        return latitud != null && Double.isFinite(latitud) && latitud >= -90 && latitud <= 90;
+    }
+
+    private boolean esLongitudValida(Double longitud) {
+        return longitud != null && Double.isFinite(longitud) && longitud >= -180 && longitud <= 180;
     }
 }

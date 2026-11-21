@@ -26,9 +26,14 @@ public interface BitacoraRepository extends JpaRepository<Bitacora, Long> {
     // keyword = "lobo", "red rota", "peligro"
     @Query("SELECT b FROM Bitacora b " +
             "WHERE b.zonaPesca.id = :idZona " +
-            "AND b.fechaHoraSalida >= :fechaLimite " +
+            "AND b.fechaHoraRegistro >= :fechaLimite " +
+            "AND b.fechaHoraRegistro <= :fechaActual " +
+            "AND b.faena.estado = 'Finalizada' " +
+            "AND b.faena.usuario.id <> :usuarioId " +
             "AND LOWER(CAST(b.observaciones AS string)) LIKE LOWER(CONCAT('%', :keyword, '%')) ")
     List<Bitacora> detectarIncidenciasRecientesEnZona(@Param("idZona") Long idZona,
                                                       @Param("fechaLimite") LocalDateTime fechaLimite,
-                                                      @Param("keyword") String keyword);
+                                                      @Param("fechaActual") LocalDateTime fechaActual,
+                                                      @Param("keyword") String keyword,
+                                                      @Param("usuarioId") Long usuarioId);
 }

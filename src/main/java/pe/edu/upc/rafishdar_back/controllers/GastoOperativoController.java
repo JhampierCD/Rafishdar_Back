@@ -20,6 +20,7 @@ public class GastoOperativoController {
     @Autowired
     private GastoOperativoService gastoService;
 
+    // http://localhost:8080/rafishdar/gastos-operativos
     @GetMapping("/gastos-operativos")
     public ResponseEntity<List<GastoOperativo>> listarTodo() {
         List<GastoOperativo> gastos = gastoService.listarTodo();
@@ -29,6 +30,7 @@ public class GastoOperativoController {
         return new ResponseEntity<>(gastos, HttpStatus.OK);
     }
 
+    // http://localhost:8080/rafishdar/gastos-operativos/bitacoras/1/gasto
     @PostMapping("/gastos-operativos/bitacoras/{idBitacora}/gasto")
     public ResponseEntity<GastoOperativo> insertar(
             @PathVariable("idBitacora") Long idBitacora,
@@ -46,6 +48,7 @@ public class GastoOperativoController {
         );
     }
 
+    // http://localhost:8080/rafishdar/gastos-operativos/bitacoras/1/gasto
     @PutMapping(
             "/gastos-operativos/bitacoras/{idBitacora}/gasto"
     )
@@ -65,6 +68,7 @@ public class GastoOperativoController {
         );
     }
 
+    // http://localhost:8080/rafishdar/gastos-operativos/bitacoras/1/gasto
     @GetMapping(
             "/gastos-operativos/bitacoras/{idBitacora}/gasto"
     )
@@ -82,6 +86,7 @@ public class GastoOperativoController {
         );
     }
 
+    // http://localhost:8080/rafishdar/gastos-operativos/bitacoras/1/gasto
     @DeleteMapping("/gastos-operativos/bitacoras/{idBitacora}/gasto")
     public ResponseEntity<Void> eliminar(
             @PathVariable("idBitacora") Long idBitacora) {
@@ -89,6 +94,7 @@ public class GastoOperativoController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
+    // http://localhost:8080/rafishdar/gastos-operativos/total/usuario/1?inicio=2024-01-01T00:00:00&fin=2024-12-31T23:59:59
     @GetMapping(
             "/gastos-operativos/total/usuario/{idUsuario}"
     )
@@ -118,6 +124,7 @@ public class GastoOperativoController {
         );
     }
 
+    // http://localhost:8080/rafishdar/gastos-operativos/promedio/usuario/1?inicio=2024-01-01T00:00:00&fin=2024-12-31T23:59:59
     @GetMapping(
             "/gastos-operativos/promedio/usuario/{idUsuario}"
     )
@@ -134,7 +141,8 @@ public class GastoOperativoController {
             )
             LocalDateTime fin) {
 
-        Double promedio = gastoService.obtenerPromedioGastosPorRango(
+        Double promedio =
+                gastoService.obtenerPromedioGastosPorRango(
                         idUsuario,
                         inicio,
                         fin
@@ -146,6 +154,7 @@ public class GastoOperativoController {
         );
     }
 
+    // http://localhost:8080/rafishdar/gastos-operativos/eficiencia/zona/1?diasAtras=30
     @GetMapping(
             "/gastos-operativos/eficiencia/zona/{idZona}"
     )

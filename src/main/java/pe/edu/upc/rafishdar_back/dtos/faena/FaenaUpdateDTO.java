@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FaenaUpdateDTO {
-    private LocalDateTime fechaHoraSalida;
-    private LocalDateTime fechaHoraLlegada;
+    private LocalDateTime fechaHoraSalidaProgramada;
+    private LocalDateTime fechaHoraLlegadaEstimada;
     private Long embarcacionId;
 }

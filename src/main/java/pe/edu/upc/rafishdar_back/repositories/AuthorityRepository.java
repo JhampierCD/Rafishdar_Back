@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface AuthorityRepository extends JpaRepository<Authority, Long> {
 
-    Authority findByName(String name);
+    Authority findFirstByNameOrderByIdAsc(String name);
 
     @Query("SELECT a FROM Authority a JOIN a.users u WHERE u.id = :userId")
     List<Authority> findByUserId(@Param("userId") Long userId);

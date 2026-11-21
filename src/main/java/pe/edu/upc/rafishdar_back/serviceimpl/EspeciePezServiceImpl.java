@@ -5,6 +5,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pe.edu.upc.rafishdar_back.dtos.EspeciePezDTO;
 import pe.edu.upc.rafishdar_back.entities.EspeciePez;
+import pe.edu.upc.rafishdar_back.exceptions.BadRequestException;
+import pe.edu.upc.rafishdar_back.exceptions.ConflictException;
+import pe.edu.upc.rafishdar_back.exceptions.ResourceNotFoundException;
 import pe.edu.upc.rafishdar_back.repositories.EspeciePezRepository;
 import pe.edu.upc.rafishdar_back.services.EspeciePezService;
 
@@ -29,15 +32,14 @@ public class EspeciePezServiceImpl implements EspeciePezService {
 
     @Override
     public EspeciePezDTO buscarPorId(Long id) {
+        if (id == null) {
+            throw new BadRequestException("El ID de especie es obligatorio");
+        }
 
         EspeciePez especie =
                 especiePezRepository
                         .findById(id)
-                        .orElse(null);
-
-        if (especie == null) {
-            return null;
-        }
+                        .orElseThrow(() -> new ResourceNotFoundException("Especie no encontrada"));
 
         return convertirDTO(especie);
     }
@@ -48,8 +50,9 @@ public class EspeciePezServiceImpl implements EspeciePezService {
             EspeciePezDTO especiePezDTO) {
 
         if (!datosValidos(especiePezDTO)) {
-            return null;
+            throw new BadRequestException("Los datos de la especie son obligatorios y deben ser válidos");
         }
+        validarNombreUnico(especiePezDTO, null);
 
         EspeciePez especie = new EspeciePez();
 
@@ -90,21 +93,18 @@ public class EspeciePezServiceImpl implements EspeciePezService {
 
         if (especiePezDTO == null ||
                 especiePezDTO.getId() == null) {
-            return null;
+            throw new BadRequestException("El ID y los datos de actualización de especie son obligatorios");
         }
 
         if (!datosValidos(especiePezDTO)) {
-            return null;
+            throw new BadRequestException("Los datos de la especie son obligatorios y deben ser válidos");
         }
+        validarNombreUnico(especiePezDTO, especiePezDTO.getId());
 
         EspeciePez especie =
                 especiePezRepository
                         .findById(especiePezDTO.getId())
-                        .orElse(null);
-
-        if (especie == null) {
-            return null;
-        }
+                        .orElseThrow(() -> new ResourceNotFoundException("Especie no encontrada"));
 
         especie.setNombreComun(
                 especiePezDTO.getNombreComun().trim()
@@ -140,21 +140,18 @@ public class EspeciePezServiceImpl implements EspeciePezService {
     @Override
     public boolean eliminar(Long id) {
 
-        if (id == null ||
-                !especiePezRepository.existsById(id)) {
-            return false;
+        if (id == null) {
+            throw new BadRequestException("El ID de especie es obligatorio");
         }
 
-        try {
-
-            especiePezRepository.deleteById(id);
-
-            return true;
-
-        } catch (Exception e) {
-
-            return false;
+        EspeciePez especie = especiePezRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Especie no encontrada"));
+        if ((especie.getCuotasPesca() != null && !especie.getCuotasPesca().isEmpty()) ||
+                (especie.getDetallesCaptura() != null && !especie.getDetallesCaptura().isEmpty())) {
+            throw new ConflictException("No se puede eliminar una especie asociada a cuotas o capturas");
         }
+        especiePezRepository.delete(especie);
+        return true;
     }
 
 
@@ -219,6 +216,22 @@ public class EspeciePezServiceImpl implements EspeciePezService {
         }
 
         return true;
+    }
+
+    private void validarNombreUnico(EspeciePezDTO dto, Long idExcluir) {
+        String nombreCientifico = dto.getNombreCientifico() == null
+                ? null : dto.getNombreCientifico().trim();
+        String nombreComun = dto.getNombreComun().trim();
+        boolean nombreComunDuplicado = idExcluir == null
+                ? especiePezRepository.existsByNombreComunIgnoreCase(nombreComun)
+                : especiePezRepository.existsByNombreComunIgnoreCaseAndIdNot(nombreComun, idExcluir);
+        boolean nombreCientificoDuplicado = nombreCientifico != null && !nombreCientifico.isBlank() &&
+                (idExcluir == null
+                        ? especiePezRepository.existsByNombreCientificoIgnoreCase(nombreCientifico)
+                        : especiePezRepository.existsByNombreCientificoIgnoreCaseAndIdNot(nombreCientifico, idExcluir));
+        if (nombreComunDuplicado || nombreCientificoDuplicado) {
+            throw new ConflictException("Ya existe una especie con ese nombre común o científico");
+        }
     }
 
 

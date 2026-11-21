@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 @Data
 public class FaenaRequestDTO {
-    private LocalDateTime fechaHoraSalida;
-    private LocalDateTime fechaHoraLlegada;
+    private LocalDateTime fechaHoraSalidaProgramada;
+    private LocalDateTime fechaHoraLlegadaEstimada;
     private Long embarcacionId;
 }

@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.rafishdar_back.dtos.TokenDTO;
 import pe.edu.upc.rafishdar_back.dtos.user.UserActualizarDTO;
@@ -56,6 +57,7 @@ public class UserController {
         );
     }
 
+    // http://localhost:8080/rafishdar/users/buscar?termino=juan
     @GetMapping("/users/buscar")
     public ResponseEntity<List<UserDTO>> buscarPorNombreOApellido(
             @RequestParam("termino") String termino) {
@@ -122,7 +124,7 @@ public class UserController {
 
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            user.getCorreo(),
+                            user.getEmail(),
                             user.getPassword()
                     )
             );
@@ -131,7 +133,7 @@ public class UserController {
                     (UserSecurity)
                             userDetailsServiceImpl
                                     .loadUserByUsername(
-                                            user.getCorreo()
+                                            user.getEmail()
                                     );
 
             String token =
@@ -163,7 +165,7 @@ public class UserController {
                     HttpStatus.OK
             );
 
-        } catch (Exception e) {
+        } catch (AuthenticationException e) {
 
             return new ResponseEntity<>(
                     HttpStatus.UNAUTHORIZED
@@ -193,6 +195,7 @@ public class UserController {
         );
     }
 
+    // http://localhost:8080/rafishdar/users/1
     @DeleteMapping("/users/{id}")
     public ResponseEntity<UserDTO> eliminarLogico(
             @PathVariable("id") Long id) {
@@ -212,6 +215,7 @@ public class UserController {
         );
     }
 
+    // http://localhost:8080/rafishdar/users/1/activar
     @PutMapping("/users/{id}/activar")
     public ResponseEntity<UserDTO> activar(
             @PathVariable("id") Long id) {

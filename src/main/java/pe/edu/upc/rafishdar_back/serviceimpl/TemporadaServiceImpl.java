@@ -4,6 +4,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pe.edu.upc.rafishdar_back.dtos.TemporadaDTO;
 import pe.edu.upc.rafishdar_back.entities.Temporada;
+import pe.edu.upc.rafishdar_back.exceptions.BadRequestException;
+import pe.edu.upc.rafishdar_back.exceptions.ConflictException;
+import pe.edu.upc.rafishdar_back.exceptions.ResourceNotFoundException;
 import pe.edu.upc.rafishdar_back.repositories.TemporadaRepository;
 import pe.edu.upc.rafishdar_back.services.TemporadaService;
 
@@ -29,15 +32,14 @@ public class TemporadaServiceImpl implements TemporadaService {
 
     @Override
     public TemporadaDTO buscarPorId(Long id) {
+        if (id == null) {
+            throw new BadRequestException("El ID de temporada es obligatorio");
+        }
 
         Temporada temporada =
                 temporadaRepository
                         .findById(id)
-                        .orElse(null);
-
-        if (temporada == null) {
-            return null;
-        }
+                        .orElseThrow(() -> new ResourceNotFoundException("Temporada no encontrada"));
 
         return convertirDTO(temporada);
     }
@@ -48,7 +50,7 @@ public class TemporadaServiceImpl implements TemporadaService {
             TemporadaDTO temporadaDTO) {
 
         if (!datosValidos(temporadaDTO)) {
-            return null;
+            throw new BadRequestException("Los datos de la temporada son obligatorios y deben ser válidos");
         }
 
         if (haySuperposicion(
@@ -56,7 +58,7 @@ public class TemporadaServiceImpl implements TemporadaService {
                 temporadaDTO.getFechaFin(),
                 null
         )) {
-            return null;
+            throw new ConflictException("El rango de fechas se superpone con otra temporada");
         }
 
         Temporada temporada = new Temporada();
@@ -88,28 +90,24 @@ public class TemporadaServiceImpl implements TemporadaService {
 
         if (temporadaDTO == null ||
                 temporadaDTO.getId() == null) {
-            return null;
+            throw new BadRequestException("El ID y los datos de actualización de temporada son obligatorios");
         }
 
         if (!datosValidos(temporadaDTO)) {
-            return null;
+            throw new BadRequestException("Los datos de la temporada son obligatorios y deben ser válidos");
         }
 
         Temporada temporada =
                 temporadaRepository
                         .findById(temporadaDTO.getId())
-                        .orElse(null);
-
-        if (temporada == null) {
-            return null;
-        }
+                        .orElseThrow(() -> new ResourceNotFoundException("Temporada no encontrada"));
 
         if (haySuperposicion(
                 temporadaDTO.getFechaInicio(),
                 temporadaDTO.getFechaFin(),
                 temporada.getId()
         )) {
-            return null;
+            throw new ConflictException("El rango de fechas se superpone con otra temporada");
         }
 
         temporada.setNombreTemporada(
@@ -135,22 +133,17 @@ public class TemporadaServiceImpl implements TemporadaService {
 
     @Override
     public boolean eliminar(Long id) {
-
-        if (id == null ||
-                !temporadaRepository.existsById(id)) {
-            return false;
+        if (id == null) {
+            throw new BadRequestException("El ID de temporada es obligatorio");
         }
 
-        try {
-
-            temporadaRepository.deleteById(id);
-
-            return true;
-
-        } catch (Exception e) {
-
-            return false;
+        Temporada temporada = temporadaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Temporada no encontrada"));
+        if (temporada.getCuotasPesca() != null && !temporada.getCuotasPesca().isEmpty()) {
+            throw new ConflictException("No se puede eliminar una temporada asociada a cuotas de pesca");
         }
+        temporadaRepository.delete(temporada);
+        return true;
     }
 
 
@@ -167,7 +160,7 @@ public class TemporadaServiceImpl implements TemporadaService {
     @Override
     public List<TemporadaDTO> buscarSuperpuestas(LocalDate inicio, LocalDate fin) {
         if (inicio == null || fin == null || inicio.isAfter(fin)) {
-            return new ArrayList<>();
+            throw new BadRequestException("El rango de fechas debe ser válido");
         }
 
         return convertirLista(

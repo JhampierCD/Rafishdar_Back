@@ -1,7 +1,8 @@
 package pe.edu.upc.rafishdar_back.services;
 
 import pe.edu.upc.rafishdar_back.dtos.cuota_pesca.CuotaPescaDTO;
-import pe.edu.upc.rafishdar_back.dtos.cuota_pesca.CuotaPescaReqUpdDTO;
+import pe.edu.upc.rafishdar_back.dtos.cuota_pesca.CuotaPescaRequestDTO;
+import pe.edu.upc.rafishdar_back.dtos.cuota_pesca.CuotaPescaUpdateDTO;
 import pe.edu.upc.rafishdar_back.entities.CuotaPesca;
 
 import java.util.List;
@@ -10,9 +11,9 @@ public interface CuotaPescaService {
 
     List<CuotaPescaDTO> listarTodo();
     CuotaPescaDTO buscarPorIdDTO(Long id);
-    CuotaPesca insertar(CuotaPescaReqUpdDTO cuotaPescaDTO);
-    CuotaPesca actualizar(CuotaPescaReqUpdDTO cuotaPescaDTO);
-    boolean eliminar(Long id);
+    CuotaPesca insertarCuota(CuotaPescaRequestDTO cuotaPescaDTO);
+    CuotaPesca actualizarCuota(Long idCuota, CuotaPescaUpdateDTO request);
+    boolean eliminarCuota(Long id);
     CuotaPescaDTO buscarPorEspecieYTemporada(
             Long especieId,
             Long temporadaId

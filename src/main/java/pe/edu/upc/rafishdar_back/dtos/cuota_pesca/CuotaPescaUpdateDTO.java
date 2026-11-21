@@ -3,8 +3,6 @@ package pe.edu.upc.rafishdar_back.dtos.cuota_pesca;
 import lombok.Data;
 
 @Data
-public class CuotaPescaReqUpdDTO {
+public class CuotaPescaUpdateDTO {
     private Double limiteToneladasIndustrial;
-    private Long especieId;
-    private Long temporadaId;
 }

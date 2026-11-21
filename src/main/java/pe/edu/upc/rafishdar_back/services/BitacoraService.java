@@ -14,8 +14,8 @@ public interface BitacoraService {
     List<BitacoraDTO> listarTodoDTO();
     Bitacora buscarBitacoraPorId(Long id);
     Bitacora insertarBitacora(BitacoraRequestDTO bitacora);
-    Bitacora actualizarBitacora(BitacoraUpdateDTO bitacora);
-    void eliminarBitacora(Long id);
+    Bitacora actualizarBitacora(Long idBitacora, BitacoraUpdateDTO bitacora);
+    Boolean eliminarBitacora(Long id);
     Boolean validarFaenaEnCurso(Faena faena);
     Boolean verificarDesvioDeZona(Long bitacoraId);
     Boolean hayAlertaDeIncidenciasEnZona(Long idZona, String keyword);

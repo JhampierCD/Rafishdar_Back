@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "bitacoras_faena")
+@Table(name = "faenas")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -22,6 +22,8 @@ public class Faena {
 
     private LocalDateTime fechaHoraSalida;
     private LocalDateTime fechaHoraLlegada;
+    private LocalDateTime fechaHoraSalidaProgramada;
+    private LocalDateTime fechaHoraLlegadaEstimada;
     private String estado; // Programada, En curso, Finalizada, Cancelada
 
     @OneToMany(mappedBy = "faena", fetch = FetchType.EAGER)

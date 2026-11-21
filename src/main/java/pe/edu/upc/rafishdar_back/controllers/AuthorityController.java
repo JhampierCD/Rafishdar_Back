@@ -21,6 +21,7 @@ public class AuthorityController {
     @Autowired
     AuthorityService authorityService;
 
+    // http://localhost:8080/rafishdar/authorities
     @GetMapping("/authorities")
     public ResponseEntity<List<Authority>> listarTodo() {
         List<Authority> authorities = authorityService.listarTodo();
@@ -30,6 +31,7 @@ public class AuthorityController {
         return new ResponseEntity<>(authorities, HttpStatus.OK);
     }
 
+    // http://localhost:8080/rafishdar/authorities/user/1
     @GetMapping("/authorities/user/{userId}")
     public ResponseEntity<List<Authority>> listarPorUsuario(
             @PathVariable Long userId) {

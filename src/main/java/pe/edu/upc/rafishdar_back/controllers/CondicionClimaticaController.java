@@ -20,6 +20,7 @@ public class CondicionClimaticaController {
     @Autowired
     private CondicionClimaticaService condicionClimaticaService;
 
+    // http://localhost:8080/rafishdar/condiciones-climaticas
     @GetMapping("/condiciones-climaticas")
     public ResponseEntity<List<CondicionClimatica>> listarCondiciones() {
         List<CondicionClimatica> foundCondiciones =
@@ -29,7 +30,7 @@ public class CondicionClimaticaController {
             return new ResponseEntity<>(
                     foundCondiciones,
                     HttpStatus.NO_CONTENT
-            );
+                );
         }
 
         return new ResponseEntity<>(
@@ -38,6 +39,7 @@ public class CondicionClimaticaController {
         );
     }
 
+    // http://localhost:8080/rafishdar/condiciones-climaticas/1
     @GetMapping("/condiciones-climaticas/{id}")
     public ResponseEntity<CondicionClimatica> buscarPorId(
             @PathVariable("id") Long id) {
@@ -58,6 +60,7 @@ public class CondicionClimaticaController {
         );
     }
 
+    // http://localhost:8080/rafishdar/condiciones-climaticas/bitacoras/1
     @PostMapping("/condiciones-climaticas/bitacoras/{idBitacora}")
     public ResponseEntity<?> insertarCondicion(
             @PathVariable("idBitacora") Long idBitacora,
@@ -71,6 +74,7 @@ public class CondicionClimaticaController {
         }
     }
 
+    // http://localhost:8080/rafishdar/condiciones-climaticas/1
     @DeleteMapping("/condiciones-climaticas/{id}")
     public ResponseEntity<HttpStatus> eliminarCondicion(
             @PathVariable("id") Long id) {
@@ -86,6 +90,7 @@ public class CondicionClimaticaController {
         );
     }
 
+    // http://localhost:8080/rafishdar/condiciones-climaticas/1
     @PutMapping("/condiciones-climaticas/{id}")
     public ResponseEntity<CondicionClimatica> actualizarCondicion(
             @PathVariable("id") Long id,
@@ -100,6 +105,7 @@ public class CondicionClimaticaController {
         return new ResponseEntity<>(actualizada, HttpStatus.OK);
     }
 
+    // http://localhost:8080/rafishdar/bitacoras/1/condicion-climatica?usuarioId=1
     @GetMapping("/bitacoras/{bitacoraId}/condicion-climatica")
     public ResponseEntity<?> consultarPorBitacora(
             @PathVariable Long bitacoraId,
@@ -132,6 +138,7 @@ public class CondicionClimaticaController {
                 );
     }
 
+    // http://localhost:8080/rafishdar/condiciones-climaticas/peligrosas?umbralNudos=30.0
     @GetMapping("/condiciones-climaticas/peligrosas")
     public ResponseEntity<List<CondicionClimatica>> condicionesPeligrosas(
             @RequestParam(defaultValue = "30.0") Double umbralNudos) {
@@ -154,6 +161,7 @@ public class CondicionClimaticaController {
         );
     }
 
+    // http://localhost:8080/rafishdar/condiciones-climaticas/promedio-temperatura?zonaId=1
     @GetMapping("/condiciones-climaticas/promedio-temperatura")
     public ResponseEntity<?> promedioTemperaturaPorZona(
             @RequestParam Long zonaId) {

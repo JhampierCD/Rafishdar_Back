@@ -111,7 +111,7 @@ public class UserServiceImpl
 
         Authority authorityPescador =
                 authorityRepository
-                        .findByName("PESCADOR");
+                        .findFirstByNameOrderByIdAsc("PESCADOR");
 
         if (authorityPescador == null) {
 
