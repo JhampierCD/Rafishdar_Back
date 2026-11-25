@@ -5,6 +5,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.rafishdar_back.dtos.cuota_pesca.CuotaPescaDTO;
+import pe.edu.upc.rafishdar_back.dtos.cuota_pesca.CuotaPescaRequestDTO;
+import pe.edu.upc.rafishdar_back.dtos.cuota_pesca.CuotaPescaUpdateDTO;
+import pe.edu.upc.rafishdar_back.entities.CuotaPesca;
+import pe.edu.upc.rafishdar_back.entities.CuotaPesca;
 import pe.edu.upc.rafishdar_back.services.CuotaPescaService;
 
 import java.util.List;
@@ -39,10 +43,10 @@ public class CuotaPescaController {
 
     // http://localhost:8080/rafishdar/cuotas-pesca/1
     @GetMapping("/cuotas-pesca/{id}")
-    public ResponseEntity<CuotaPescaDTO> buscarPorId(
+    public ResponseEntity<CuotaPesca> buscarPorId(
             @PathVariable("id") Long id) {
 
-        CuotaPescaDTO foundCuota =
+        CuotaPesca foundCuota =
                 cuotaPescaService.buscarPorId(id);
 
         if (foundCuota == null) {
@@ -60,17 +64,10 @@ public class CuotaPescaController {
 
     // http://localhost:8080/rafishdar/cuotas-pesca
     @PostMapping("/cuotas-pesca")
-    public ResponseEntity<CuotaPescaDTO> insertar(
-            @RequestBody CuotaPescaDTO cuotaPescaDTO) {
+    public ResponseEntity<CuotaPesca> insertar(
+            @RequestBody CuotaPescaRequestDTO cuotaPescaDTO) {
 
-        CuotaPescaDTO newCuota =
-                cuotaPescaService.insertar(cuotaPescaDTO);
-
-        if (newCuota == null) {
-            return new ResponseEntity<>(
-                    HttpStatus.NOT_ACCEPTABLE
-            );
-        }
+        CuotaPesca newCuota = cuotaPescaService.insertarCuota(cuotaPescaDTO);
 
         return new ResponseEntity<>(
                 newCuota,
@@ -78,19 +75,13 @@ public class CuotaPescaController {
         );
     }
 
-    // http://localhost:8080/rafishdar/cuotas-pesca
-    @PutMapping("/cuotas-pesca")
-    public ResponseEntity<CuotaPescaDTO> actualizar(
-            @RequestBody CuotaPescaDTO cuotaPescaDTO) {
+    // http://localhost:8080/rafishdar/cuotas-pesca/1
+    @PutMapping("/cuotas-pesca/{id}")
+    public ResponseEntity<CuotaPesca> actualizar(
+            @PathVariable Long id,
+            @RequestBody CuotaPescaUpdateDTO request) {
 
-        CuotaPescaDTO updatedCuota =
-                cuotaPescaService.actualizar(cuotaPescaDTO);
-
-        if (updatedCuota == null) {
-            return new ResponseEntity<>(
-                    HttpStatus.NOT_ACCEPTABLE
-            );
-        }
+        CuotaPesca updatedCuota = cuotaPescaService.actualizarCuota(id, request);
 
         return new ResponseEntity<>(
                 updatedCuota,
@@ -100,18 +91,11 @@ public class CuotaPescaController {
 
     // http://localhost:8080/rafishdar/cuotas-pesca/1
     @DeleteMapping("/cuotas-pesca/{id}")
-    public ResponseEntity<HttpStatus> eliminar(
+    public ResponseEntity<Boolean> eliminar(
             @PathVariable("id") Long id) {
 
-        if (!cuotaPescaService.eliminar(id)) {
-            return new ResponseEntity<>(
-                    HttpStatus.NOT_ACCEPTABLE
-            );
-        }
-
-        return new ResponseEntity<>(
-                HttpStatus.OK
-        );
+        Boolean eliminado = cuotaPescaService.eliminarCuota(id);
+        return new ResponseEntity<>(eliminado, HttpStatus.OK);
     }
 
     // http://localhost:8080/rafishdar/cuotas-pesca/especie/1/temporada/2
@@ -183,6 +167,7 @@ public class CuotaPescaController {
         );
     }
 
+    // http://localhost:8080/rafishdar/cuotas-pesca/temporada/1/especies
     @GetMapping("/cuotas-pesca/temporada/{temporadaId}/especies")
     public ResponseEntity<List<CuotaPescaDTO>> listarPorTemporadaConEspecie(
             @PathVariable("temporadaId") Long temporadaId) {

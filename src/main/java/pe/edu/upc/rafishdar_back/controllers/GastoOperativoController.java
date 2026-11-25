@@ -6,7 +6,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.rafishdar_back.entities.GastoOperativo;
-import pe.edu.upc.rafishdar_back.dtos.GastoOperativoRequestDTO;
+import pe.edu.upc.rafishdar_back.dtos.gasto_operativo.GastoOperativoRequestDTO;
+import pe.edu.upc.rafishdar_back.dtos.gasto_operativo.GastoOperativoUpdateDTO;
 import pe.edu.upc.rafishdar_back.services.GastoOperativoService;
 
 import java.time.LocalDateTime;
@@ -20,6 +21,7 @@ public class GastoOperativoController {
     @Autowired
     private GastoOperativoService gastoService;
 
+    // http://localhost:8080/rafishdar/gastos-operativos
     @GetMapping("/gastos-operativos")
     public ResponseEntity<List<GastoOperativo>> listarTodo() {
         List<GastoOperativo> gastos = gastoService.listarTodo();
@@ -29,14 +31,15 @@ public class GastoOperativoController {
         return new ResponseEntity<>(gastos, HttpStatus.OK);
     }
 
-    @PostMapping("/gastos-operativos/bitacoras/{idBitacora}/gasto")
+    // http://localhost:8080/rafishdar/gastos-operativos/faenas/1/gasto
+    @PostMapping("/gastos-operativos/faenas/{idFaena}/gasto")
     public ResponseEntity<GastoOperativo> insertar(
-            @PathVariable("idBitacora") Long idBitacora,
+            @PathVariable("idFaena") Long idFaena,
             @RequestBody GastoOperativoRequestDTO request) {
 
         GastoOperativo newGasto =
                 gastoService.insertarGasto(
-                        idBitacora,
+                        idFaena,
                         request
                 );
 
@@ -46,16 +49,17 @@ public class GastoOperativoController {
         );
     }
 
+    // http://localhost:8080/rafishdar/gastos-operativos/faenas/1/gasto
     @PutMapping(
-            "/gastos-operativos/bitacoras/{idBitacora}/gasto"
+            "/gastos-operativos/faenas/{idFaena}/gasto"
     )
     public ResponseEntity<GastoOperativo> actualizar(
-            @PathVariable("idBitacora") Long idBitacora,
-            @RequestBody GastoOperativoRequestDTO request) {
+            @PathVariable("idFaena") Long idFaena,
+            @RequestBody GastoOperativoUpdateDTO request) {
 
         GastoOperativo updatedGasto =
                 gastoService.actualizarGasto(
-                        idBitacora,
+                        idFaena,
                         request
                 );
 
@@ -65,15 +69,16 @@ public class GastoOperativoController {
         );
     }
 
+    // http://localhost:8080/rafishdar/gastos-operativos/bitacoras/1/gasto
     @GetMapping(
-            "/gastos-operativos/bitacoras/{idBitacora}/gasto"
+            "/gastos-operativos/faenas/{idFaena}/gasto"
     )
-    public ResponseEntity<GastoOperativo> buscarPorBitacora(
-            @PathVariable("idBitacora") Long idBitacora) {
+    public ResponseEntity<GastoOperativo> buscarPorFaena(
+            @PathVariable("idFaena") Long idFaena) {
 
         GastoOperativo foundGasto =
-                gastoService.buscarGastoPorBitacora(
-                        idBitacora
+                gastoService.buscarGastoPorFaena(
+                        idFaena
                 );
 
         return new ResponseEntity<>(
@@ -82,13 +87,14 @@ public class GastoOperativoController {
         );
     }
 
-    @DeleteMapping("/gastos-operativos/bitacoras/{idBitacora}/gasto")
-    public ResponseEntity<Void> eliminar(
-            @PathVariable("idBitacora") Long idBitacora) {
-        gastoService.eliminar(idBitacora);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    // http://localhost:8080/rafishdar/gastos-operativos/faenas/1/gasto
+    @DeleteMapping("/gastos-operativos/faenas/{idFaena}/gasto")
+    public ResponseEntity<Boolean> eliminar(
+            @PathVariable("idFaena") Long idFaena) {
+        return new ResponseEntity<>(gastoService.eliminar(idFaena), HttpStatus.OK);
     }
 
+    // http://localhost:8080/rafishdar/gastos-operativos/total/usuario/1?inicio=2024-01-01T00:00:00&fin=2024-12-31T23:59:59
     @GetMapping(
             "/gastos-operativos/total/usuario/{idUsuario}"
     )
@@ -118,6 +124,7 @@ public class GastoOperativoController {
         );
     }
 
+    // http://localhost:8080/rafishdar/gastos-operativos/promedio/usuario/1?inicio=2024-01-01T00:00:00&fin=2024-12-31T23:59:59
     @GetMapping(
             "/gastos-operativos/promedio/usuario/{idUsuario}"
     )
@@ -134,7 +141,8 @@ public class GastoOperativoController {
             )
             LocalDateTime fin) {
 
-        Double promedio = gastoService.obtenerPromedioGastosPorRango(
+        Double promedio =
+                gastoService.obtenerPromedioGastosPorRango(
                         idUsuario,
                         inicio,
                         fin
@@ -146,6 +154,7 @@ public class GastoOperativoController {
         );
     }
 
+    // http://localhost:8080/rafishdar/gastos-operativos/eficiencia/zona/1?diasAtras=30
     @GetMapping(
             "/gastos-operativos/eficiencia/zona/{idZona}"
     )

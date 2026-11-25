@@ -21,7 +21,7 @@ public interface FaenaService {
     Faena actualizarEnCurso(Long idFaena, FaenaUpdateDTO datosNuevos);
     Faena terminarFaena(Long idFaena, Boolean ultimaBitacora, BitacoraRequestDTO request);
     Faena cancelarFaenaEnCursoOFinalizada(Long idFaena);
-    void eliminarFaenaPlanificada(Long idFaena);
+    Boolean eliminarFaenaPlanificada(Long idFaena);
     List<FaenaDTO> listarFaenasPorUsuarioYEstado(Long usuarioId, String estado);
     Double obtenerTiempoPromedioFaena(Long idUsuario, LocalDateTime inicio, LocalDateTime fin);
     void automatizarCancelacionFaenasExpiradas();

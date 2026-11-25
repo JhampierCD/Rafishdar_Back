@@ -1,11 +1,9 @@
 package pe.edu.upc.rafishdar_back.dtos.cuota_pesca;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import pe.edu.upc.rafishdar_back.dtos.EspeciePezDTO;
-
+import pe.edu.upc.rafishdar_back.dtos.especie_pez.EspeciePezDTO;
 
 @Data
 @AllArgsConstructor

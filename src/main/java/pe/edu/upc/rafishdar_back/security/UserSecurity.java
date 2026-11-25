@@ -60,6 +60,6 @@ public class UserSecurity
     @Override
     public boolean isEnabled() {
 
-        return user.getEstado();
+        return Boolean.TRUE.equals(user.getEstado());
     }
 }

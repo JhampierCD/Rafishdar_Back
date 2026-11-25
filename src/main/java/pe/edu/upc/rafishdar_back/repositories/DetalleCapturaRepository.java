@@ -1,10 +1,12 @@
 package pe.edu.upc.rafishdar_back.repositories;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import pe.edu.upc.rafishdar_back.entities.DetalleCaptura;
 
+import org.springframework.data.domain.Pageable;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -15,11 +17,14 @@ public interface DetalleCapturaRepository extends JpaRepository<DetalleCaptura, 
             "FROM DetalleCaptura d JOIN d.bitacora b JOIN b.faena f " +
             "WHERE f.usuario.id = :usuarioId " +
             "AND d.especie.id = :especieId " +
-            "AND b.fechaHoraRegistro BETWEEN :inicio AND :fin")
+            "AND b.fechaHoraRegistro >= :inicio " +
+            "AND b.fechaHoraRegistro < :fin " +
+            "AND (:detalleExcluirId IS NULL OR d.id <> :detalleExcluirId)")
     Double calcularVolumenHistoricoKg(@Param("usuarioId") Long usuarioId,
                                       @Param("especieId") Long especieId,
                                       @Param("inicio") LocalDateTime inicio,
-                                      @Param("fin") LocalDateTime fin);
+                                      @Param("fin") LocalDateTime fin,
+                                      @Param("detalleExcluirId") Long detalleExcluirId);
 
     // Calcular el volumen total capturado (todas las especies) en un rango de fechas
     @Query("SELECT SUM(d.volumenKg) " +
@@ -43,15 +48,17 @@ public interface DetalleCapturaRepository extends JpaRepository<DetalleCaptura, 
 
     // Retorna una lista de zonas y su volumen total, ordenada de mayor a menor captura para una especie en un mes específico.
     // Se usa Pageable (ej. PageRequest.of(0, 3)) para obtener solo el "Top 3" de zonas.
-    @Query("SELECT b.zonaPesca.id " +
+    @Query("SELECT b.zonaPesca.id, SUM(d.volumenKg) AS totalKg " +
             "FROM DetalleCaptura d JOIN d.bitacora b " +
             "WHERE d.especie.id = :especieId " +
             "AND MONTH(b.fechaHoraRegistro) = :mes " +
+            "AND YEAR(b.fechaHoraRegistro) = :anio " +
             "GROUP BY b.zonaPesca.id " +
-            "ORDER BY SUM(d.volumenKg) DESC")
-    List<Long> encontrarMejoresZonasPorEspecieYMes(@Param("especieId") Long especieId,
-                                                                @Param("mes") int mes,
-                                                                org.springframework.data.domain.Pageable pageable);
+            "ORDER BY totalKg DESC")
+    List<Object[]> encontrarMejoresZonasPorEspecieYMes(@Param("especieId") Long especieId,
+                                                       @Param("mes") int mes,
+                                                       @Param("anio") int anio,
+                                                       Pageable pageable);
 
     // Calcula la suma de kilogramos de especies que están en veda para una bitácora específica.
     @Query("SELECT SUM(d.volumenKg) FROM DetalleCaptura d " +

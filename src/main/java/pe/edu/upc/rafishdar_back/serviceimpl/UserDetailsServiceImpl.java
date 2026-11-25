@@ -20,11 +20,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             String username)
             throws UsernameNotFoundException {
 
-        User user =
-                userRepository
-                        .findByEmailIgnoreCase(
-                                username
-                        );
+        if (username == null || username.isBlank()) {
+            throw new UsernameNotFoundException("Debe proporcionar un correo electrónico");
+        }
+
+        User user = userRepository.findByEmailIgnoreCase(username.trim());
 
         if (user == null) {
 

@@ -26,6 +26,9 @@ import java.util.List;
 @Transactional
 public class FaenaServiceImpl implements FaenaService {
 
+    private static final LocalDateTime FIN_DE_INTERVALO_ABIERTO =
+            LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+
     @Autowired
     private FaenaRepository faenaRepository;
 
@@ -44,27 +47,36 @@ public class FaenaServiceImpl implements FaenaService {
     @Autowired
     private RecomendacionIARepository recomendacionIARepository;
 
+    @Autowired
+    private FaenaAuthorizationService autorizacionFaena;
+
     // --- MÉTODOS BASE (CRUD) ---
 
     @Override
     public List<Faena> listarTodo() {
+        if (!autorizacionFaena.esAdministrador()) {
+            Long usuarioId = autorizacionFaena.obtenerUsuarioAutenticadoId();
+            return faenaRepository.findByUsuarioId(usuarioId);
+        }
         return faenaRepository.findAll();
     }
 
     @Override
     public List<FaenaDTO> listarTodoDTO() {
-        List<Faena> faenas = faenaRepository.findAll();
+        List<Faena> faenas = listarTodo();
         List<FaenaDTO> listaDTOs = new ArrayList<>();
 
         for (Faena faena : faenas){
             FaenaDTO faenaDTO = new FaenaDTO();
 
             faenaDTO.setId(faena.getId());
+            faenaDTO.setFechaHoraSalidaProgramada(faena.getFechaHoraSalidaProgramada());
+            faenaDTO.setFechaHoraLlegadaEstimada(faena.getFechaHoraLlegadaEstimada());
             faenaDTO.setFechaHoraSalida(faena.getFechaHoraSalida());
             faenaDTO.setFechaHoraLlegada(faena.getFechaHoraLlegada());
             faenaDTO.setEstado(faena.getEstado());
-            faenaDTO.setUsuarioId(faena.getUsuario().getId());
-            faenaDTO.setEmbarcacionId(faena.getEmbarcacion().getId());
+            faenaDTO.setUsuarioId(faena.getUsuario() != null ? faena.getUsuario().getId() : null);
+            faenaDTO.setEmbarcacionId(faena.getEmbarcacion() != null ? faena.getEmbarcacion().getId() : null);
 
             listaDTOs.add(faenaDTO);
         }
@@ -74,6 +86,15 @@ public class FaenaServiceImpl implements FaenaService {
 
     @Override
     public List<FaenaDTO> listarFaenasPorUsuarioId(Long idUsuario) {
+        if (idUsuario == null) {
+            throw new BadRequestException("El ID del usuario es obligatorio");
+        }
+        autorizacionFaena.validarAccesoUsuario(idUsuario);
+
+        if (!userRepository.existsById(idUsuario)){
+            throw new ResourceNotFoundException("Usuario no encontrado");
+        }
+
         List<Faena> faenas = faenaRepository.findByUsuarioId(idUsuario);
         List<FaenaDTO> listaDTOs = new ArrayList<>();
 
@@ -81,11 +102,13 @@ public class FaenaServiceImpl implements FaenaService {
             FaenaDTO faenaDTO = new FaenaDTO();
 
             faenaDTO.setId(faena.getId());
+            faenaDTO.setFechaHoraSalidaProgramada(faena.getFechaHoraSalidaProgramada());
+            faenaDTO.setFechaHoraLlegadaEstimada(faena.getFechaHoraLlegadaEstimada());
             faenaDTO.setFechaHoraSalida(faena.getFechaHoraSalida());
             faenaDTO.setFechaHoraLlegada(faena.getFechaHoraLlegada());
             faenaDTO.setEstado(faena.getEstado());
-            faenaDTO.setUsuarioId(faena.getUsuario().getId());
-            faenaDTO.setEmbarcacionId(faena.getEmbarcacion().getId());
+            faenaDTO.setUsuarioId(faena.getUsuario() != null ? faena.getUsuario().getId() : null);
+            faenaDTO.setEmbarcacionId(faena.getEmbarcacion() != null ? faena.getEmbarcacion().getId() : null);
 
             listaDTOs.add(faenaDTO);
         }
@@ -95,46 +118,76 @@ public class FaenaServiceImpl implements FaenaService {
 
     @Override
     public Faena buscarFaenaPorId(Long idFaena) {
-        return faenaRepository.findById(idFaena)
+        if (idFaena == null){
+            throw new BadRequestException("El ID de la faena es obligatorio");
+        }
+
+        Faena faena = faenaRepository.findById(idFaena)
                 .orElseThrow(() -> new ResourceNotFoundException("Faena no encontrada"));
+        autorizacionFaena.validarAcceso(faena, false);
+        return faena;
     }
 
     @Override
     public Faena insertarFaena(FaenaRequestDTO request) {
+        if (request == null) {
+            throw new BadRequestException("El request de la faena es obligatorio");
+        }
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
-            throw new BadRequestException("No se encontró una sesión de usuario autenticada.");
+            throw new org.springframework.security.authentication.AuthenticationCredentialsNotFoundException(
+                    "Se requiere una sesión autenticada");
         }
 
-        String emailUsuario = auth.getName();
-        User usuario = userRepository.findByEmail(emailUsuario)
+        String userEmail = auth.getName();
+
+        User usuario = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
-        Embarcacion embarcacion = embarcacionRepository.findById(request.getEmbarcacionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Embarcación no encontrada"));
-
-        if (request.getFechaHoraSalida() == null){
-            throw new ResourceNotFoundException("Fecha y Hora de Salida no ingresadas");
+        if (request.getEmbarcacionId() == null) {
+            throw new BadRequestException("El ID de la embarcación es obligatorio");
         }
 
-        if (request.getFechaHoraLlegada() != null) {
-            if (!request.getFechaHoraLlegada().isAfter(request.getFechaHoraSalida())){
-                throw new ConflictException("La fecha y hora de llegada no puede ser anterior a la fecha de salida");
-            }
+        Embarcacion embarcacion = embarcacionRepository.findByIdAndUsuarioId(request.getEmbarcacionId(), usuario.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Embarcación no encontrada o no pertenece al usuario"));
 
-            if (faenaRepository.existeFaenaSolapada(usuario.getId(), embarcacion.getId(), request.getFechaHoraSalida(),
-                    request.getFechaHoraSalida())){
-                throw new ConflictException("El usuario o la embarcación ya tienen otra faena en ese horario");
-            }
+        LocalDateTime salidaProgramada = request.getFechaHoraSalidaProgramada();
+        LocalDateTime llegadaEstimada = request.getFechaHoraLlegadaEstimada();
+
+        if (salidaProgramada == null) {
+            throw new BadRequestException("La fecha y hora de salida programada son obligatorias");
+        }
+
+        if (llegadaEstimada != null && !llegadaEstimada.isAfter(salidaProgramada)) {
+            throw new BadRequestException("La llegada estimada debe ser posterior a la salida programada");
+        }
+        if (salidaProgramada.isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("La salida programada no puede estar en el pasado");
+        }
+
+        if (existeFaenaSolapada(
+                usuario.getId(),
+                embarcacion.getId(),
+                salidaProgramada,
+                llegadaEstimada,
+                null)) {
+            throw new ConflictException("El usuario o la embarcación ya tienen otra faena en ese horario");
         }
 
         Faena faena = new Faena();
+
         faena.setUsuario(usuario);
         faena.setEmbarcacion(embarcacion);
-        faena.setFechaHoraSalida(request.getFechaHoraSalida());
-        faena.setFechaHoraLlegada(request.getFechaHoraLlegada());
-        faena.setEstado("Planificada"); // Estado inicial por defecto
+
+        faena.setFechaHoraSalidaProgramada(salidaProgramada);
+        faena.setFechaHoraLlegadaEstimada(llegadaEstimada);
+
+        faena.setFechaHoraSalida(null);
+        faena.setFechaHoraLlegada(null);
+
+        faena.setEstado("Planificada");
 
         return faenaRepository.save(faena);
     }
@@ -142,155 +195,196 @@ public class FaenaServiceImpl implements FaenaService {
     @Override
     public Faena cambiarEstadoAEnCurso(Long idFaena) {
         Faena faena = buscarFaenaPorId(idFaena);
+        autorizacionFaena.validarAcceso(faena, true);
+
         if (!"Planificada".equals(faena.getEstado())) {
             throw new ConflictException("Solo las faenas planificadas pueden pasar a 'En curso'");
         }
+
         faena.setFechaHoraSalida(LocalDateTime.now());
+        faena.setFechaHoraLlegada(null);
         faena.setEstado("En curso");
+
         return faenaRepository.save(faena);
     }
 
     @Override
     public Faena cambiarEstadoAPlanificada(Long idFaena) {
         Faena faena = buscarFaenaPorId(idFaena);
+        autorizacionFaena.validarAcceso(faena, true);
 
         if (!"En curso".equals(faena.getEstado())) {
             throw new ConflictException("Solo se puede revertir a 'Planificada' una faena 'En curso'.");
         }
 
         if (faena.getBitacoras() != null && !faena.getBitacoras().isEmpty()) {
-            throw new ConflictException("No se puede revertir a 'Planificada' una faena que ya tiene bitácoras registradas.");
+            throw new ConflictException(
+                    "No se puede revertir a 'Planificada' una faena que ya tiene bitácoras registradas.");
         }
 
-        if (!faenaRepository.existeFaenaSolapada(faena.getUsuario().getId(), faena.getEmbarcacion().getId(), LocalDateTime.now().plusHours(1),
-                faena.getFechaHoraLlegada())){
-            // Ajuste de la fecha de salida para evitar conflictos con faenas solapadas
-            faena.setFechaHoraSalida(LocalDateTime.now().plusHours(1));
+        if (existeFaenaSolapada(
+                faena.getUsuario().getId(),
+                faena.getEmbarcacion().getId(),
+                faena.getFechaHoraSalidaProgramada(),
+                faena.getFechaHoraLlegadaEstimada(),
+                faena.getId())) {
+            throw new ConflictException("El usuario o la embarcación ya tienen otra faena en ese horario");
         }
 
+        // Limpiamos las fechas reales
+        faena.setFechaHoraSalida(null);
+        faena.setFechaHoraLlegada(null);
+
+        // Conservamos las fechas programadas y estimadas
         faena.setEstado("Planificada");
-        // fechaHoraSalida se conserva intacta con el valor que ya tiene en BD
 
         return faenaRepository.save(faena);
     }
 
     @Override
     public Faena actualizarPlanificada(Long idFaena, FaenaUpdateDTO datosNuevos) {
+        if (datosNuevos == null) {
+            throw new BadRequestException("El request de actualización es obligatorio");
+        }
+
         Faena faena = buscarFaenaPorId(idFaena);
+        autorizacionFaena.validarAcceso(faena, true);
 
         if (!"Planificada".equals(faena.getEstado())) {
             throw new ConflictException("Este método solo permite actualizar faenas en estado 'Planificada'.");
         }
-
-        // 1. Actualizamos solo lo permitido en este estado
-        User usuario = userRepository.findById(faena.getUsuario().getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
-
-        Embarcacion embarcacion = new Embarcacion();
-
-        if (datosNuevos.getEmbarcacionId() != null){
-            embarcacion = embarcacionRepository.findById(datosNuevos.getEmbarcacionId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Embarcación no encontrada"));
-
-            faena.setEmbarcacion(embarcacion);
-        }
-        else{
-            embarcacion = faena.getEmbarcacion();
+        if (datosNuevos.getFechaHoraSalidaProgramada() == null &&
+                datosNuevos.getFechaHoraLlegadaEstimada() == null &&
+                datosNuevos.getEmbarcacionId() == null) {
+            throw new BadRequestException("Debe proporcionar al menos un campo para actualizar");
         }
 
-        if (datosNuevos.getFechaHoraSalida() != null && datosNuevos.getFechaHoraLlegada() != null){
-            if (!datosNuevos.getFechaHoraLlegada().isAfter(datosNuevos.getFechaHoraSalida())){
-                throw new ConflictException("La fecha y hora de llegada no puede ser anterior a la fecha de salida");
-            }
+        User usuario = faena.getUsuario();
+        Embarcacion embarcacion = faena.getEmbarcacion();
 
-            if (faenaRepository.existeFaenaSolapada(usuario.getId(), embarcacion.getId(), datosNuevos.getFechaHoraSalida(),
-                    datosNuevos.getFechaHoraLlegada())){
-                throw new ConflictException("El usuario o la embarcación ya tienen otra faena en ese horario");
-            }
-
-            faena.setFechaHoraSalida(datosNuevos.getFechaHoraSalida());
-            faena.setFechaHoraLlegada(datosNuevos.getFechaHoraLlegada());
+        if (datosNuevos.getEmbarcacionId() != null) {
+            embarcacion = embarcacionRepository.findByIdAndUsuarioId(datosNuevos.getEmbarcacionId(), usuario.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Embarcación no encontrada o no pertenece al usuario"));
         }
 
-        if (datosNuevos.getFechaHoraSalida() == null){
-            if (faenaRepository.existeFaenaSolapada(usuario.getId(), embarcacion.getId(), faena.getFechaHoraSalida(),
-                    datosNuevos.getFechaHoraLlegada())){
-                throw new ConflictException("El usuario o la embarcación ya tienen otra faena en ese horario");
-            }
-            faena.setFechaHoraLlegada(datosNuevos.getFechaHoraLlegada());
+        LocalDateTime nuevaSalidaProgramada = datosNuevos.getFechaHoraSalidaProgramada() != null
+                ? datosNuevos.getFechaHoraSalidaProgramada() : faena.getFechaHoraSalidaProgramada();
+
+        LocalDateTime nuevaLlegadaEstimada = datosNuevos.getFechaHoraLlegadaEstimada() != null
+                ? datosNuevos.getFechaHoraLlegadaEstimada() : faena.getFechaHoraLlegadaEstimada();
+
+        if (nuevaSalidaProgramada == null) {
+            throw new BadRequestException("La fecha de salida programada es obligatoria");
         }
 
-        if (datosNuevos.getFechaHoraLlegada() == null){
-            if (faenaRepository.existeFaenaSolapada(usuario.getId(), embarcacion.getId(), datosNuevos.getFechaHoraSalida(),
-                    faena.getFechaHoraLlegada())){
-                throw new ConflictException("El usuario o la embarcación ya tienen otra faena en ese horario");
-            }
-            faena.setFechaHoraSalida(datosNuevos.getFechaHoraSalida());
+        if (nuevaLlegadaEstimada != null &&
+                !nuevaLlegadaEstimada.isAfter(nuevaSalidaProgramada)) {
+            throw new BadRequestException("La llegada estimada debe ser posterior a la salida programada");
         }
 
-        // Ignoramos si el JSON trae 'user'.
+        if (existeFaenaSolapada(
+                usuario.getId(),
+                embarcacion.getId(),
+                nuevaSalidaProgramada,
+                nuevaLlegadaEstimada,
+                faena.getId())) {
+            throw new ConflictException("El usuario o la embarcación ya tienen otra faena en ese horario");
+        }
+
+        faena.setEmbarcacion(embarcacion);
+        faena.setFechaHoraSalidaProgramada(nuevaSalidaProgramada);
+        faena.setFechaHoraLlegadaEstimada(nuevaLlegadaEstimada);
+
         return faenaRepository.save(faena);
     }
 
     @Override
     public Faena actualizarEnCurso(Long idFaena, FaenaUpdateDTO datosNuevos) {
-        Faena foundFaena = buscarFaenaPorId(idFaena);
+        if (datosNuevos == null) {
+            throw new BadRequestException("El request de actualización es obligatorio");
+        }
 
-        if (!"En curso".equals(foundFaena.getEstado())) {
+        Faena faena = buscarFaenaPorId(idFaena);
+        autorizacionFaena.validarAcceso(faena, true);
+
+        if (!"En curso".equals(faena.getEstado())) {
             throw new ConflictException("Este método solo permite actualizar faenas en estado 'En curso'.");
         }
 
-        // 1. Actualizamos solo lo permitido en este estado (Coordenadas y Observaciones)
-        if (datosNuevos.getFechaHoraLlegada() != null) {
-            User usuario = userRepository.findById(foundFaena.getUsuario().getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
-            Embarcacion embarcacion = embarcacionRepository.findById(foundFaena.getEmbarcacion().getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Embarcación no encontrada"));
+        if (datosNuevos.getEmbarcacionId() != null ||
+                datosNuevos.getFechaHoraSalidaProgramada() != null) {
+            throw new BadRequestException("En una faena en curso solo se puede modificar la llegada estimada");
+        }
+        if (datosNuevos.getFechaHoraLlegadaEstimada() == null) {
+            throw new BadRequestException("La llegada estimada es obligatoria para esta actualización");
+        }
 
-            if (datosNuevos.getFechaHoraLlegada().isBefore(foundFaena.getFechaHoraSalida())) {
-                throw new ConflictException("La fecha y hora de llegada no puede ser anterior a la fecha de salida");
+        if (datosNuevos.getFechaHoraLlegadaEstimada() != null) {
+
+            LocalDateTime nuevaLlegadaEstimada = datosNuevos.getFechaHoraLlegadaEstimada();
+
+            if (faena.getFechaHoraSalida() == null ||
+                    !nuevaLlegadaEstimada.isAfter(faena.getFechaHoraSalida())) {
+                throw new BadRequestException(
+                        "La llegada estimada debe ser posterior a la salida real");
             }
 
-            if (faenaRepository.existeFaenaSolapada(usuario.getId(), embarcacion.getId(), foundFaena.getFechaHoraSalida(),
-                    datosNuevos.getFechaHoraLlegada())){
+            if (existeFaenaSolapada(
+                    faena.getUsuario().getId(),
+                    faena.getEmbarcacion().getId(),
+                    faena.getFechaHoraSalida(),
+                    nuevaLlegadaEstimada,
+                    faena.getId())) {
                 throw new ConflictException("El usuario o la embarcación ya tienen otra faena en ese horario");
             }
 
-            foundFaena.setFechaHoraLlegada(datosNuevos.getFechaHoraLlegada());
+            faena.setFechaHoraLlegadaEstimada(nuevaLlegadaEstimada);
         }
 
-        // Ignoramos si intentan cambiar el User, la Embarcación o el estado aquí.
-        return faenaRepository.save(foundFaena);
+        return faenaRepository.save(faena);
     }
 
     @Override
     public Faena terminarFaena(Long idFaena, Boolean ultimaBitacora, BitacoraRequestDTO request) {
         Faena faena = buscarFaenaPorId(idFaena);
+        autorizacionFaena.validarAcceso(faena, true);
+        if (ultimaBitacora == null) {
+            throw new BadRequestException("Debe indicar si se registra la última bitácora");
+        }
+
         if (!"En curso".equals(faena.getEstado())) {
             throw new ConflictException("Solo las faenas 'En curso' pueden finalizarse");
         }
 
-        // Implementación de crear última bitácora si es necesario
-        if (ultimaBitacora){
-            if (request == null){
+        if (ultimaBitacora) {
+            if (request == null) {
                 throw new BadRequestException("Se requiere información de la última bitácora para finalizar la faena");
             }
 
-            try{
-                Bitacora bitacora = bitacoraService.insertarBitacora(request);
-            } catch (Exception e) {
-                throw new ConflictException("Error al crear la última bitácora: " + e.getMessage());
+            if (request.getFaenaId() == null || !request.getFaenaId().equals(idFaena)) {
+                throw new BadRequestException("La bitácora debe pertenecer a la faena que se está finalizando");
             }
+
+            bitacoraService.insertarBitacora(request);
         }
 
+        LocalDateTime llegadaReal = LocalDateTime.now();
+
+        if (faena.getFechaHoraSalida() == null ||
+                !llegadaReal.isAfter(faena.getFechaHoraSalida())) {
+            throw new ConflictException("La llegada real debe ser posterior a la salida real");
+        }
+
+        faena.setFechaHoraLlegada(llegadaReal);
         faena.setEstado("Finalizada");
-        faena.setFechaHoraLlegada(LocalDateTime.now());
+
         return faenaRepository.save(faena);
     }
 
     @Override
     public Faena cancelarFaenaEnCursoOFinalizada(Long idFaena) {
         Faena foundFaena = buscarFaenaPorId(idFaena);
+        autorizacionFaena.validarAcceso(foundFaena, true);
         if (!"En curso".equals(foundFaena.getEstado()) && !"Finalizada".equals(foundFaena.getEstado())) {
             throw new ConflictException("Solo las faenas 'En curso' o 'Finalizada' pueden cancelarse");
         }
@@ -299,10 +393,14 @@ public class FaenaServiceImpl implements FaenaService {
     }
 
     @Override
-    public void eliminarFaenaPlanificada(Long idFaena) {
+    public Boolean eliminarFaenaPlanificada(Long idFaena) {
         Faena foundFaena = buscarFaenaPorId(idFaena);
+        autorizacionFaena.validarAcceso(foundFaena, true);
         if (!"Planificada".equals(foundFaena.getEstado())) {
-            throw new ConflictException("No se puede eliminar una faena finalizada o en curso por motivos de auditoría");
+            throw new ConflictException("No se puede eliminar una faena finalizada o en curso.");
+        }
+        if (foundFaena.getBitacoras() != null && !foundFaena.getBitacoras().isEmpty()) {
+            throw new ConflictException("No se puede eliminar una faena que ya tiene bitácoras registradas");
         }
 
         if (foundFaena.getGastoOperativo() != null){
@@ -314,6 +412,7 @@ public class FaenaServiceImpl implements FaenaService {
         }
 
         faenaRepository.delete(foundFaena);
+        return true;
     }
 
     @Override
@@ -327,6 +426,20 @@ public class FaenaServiceImpl implements FaenaService {
     // --- MÉTODOS ANALÍTICOS ---
 
     public List<FaenaDTO> listarFaenasPorUsuarioYEstado(Long idUsuario, String estado) {
+        if (idUsuario == null || estado == null || estado.isBlank()){
+            throw new BadRequestException("El ID de usuario y el estado son obligatorios");
+        }
+        autorizacionFaena.validarAccesoUsuario(idUsuario);
+
+        if (!userRepository.existsById(idUsuario)){
+            throw new ResourceNotFoundException("Usuario no encontrado");
+        }
+
+        if (!estado.equals("Planificada") && !estado.equals("En curso")
+                && !estado.equals("Finalizada") && !estado.equals("Cancelada")) {
+            throw new BadRequestException("El estado proporcionado no es válido");
+        }
+
         List<Faena> faenaResumen = faenaRepository.findByUsuarioIdAndEstado(idUsuario, estado);
         List<FaenaDTO> faenaResumenDTO = new ArrayList<>();
 
@@ -334,11 +447,13 @@ public class FaenaServiceImpl implements FaenaService {
             FaenaDTO dto = new FaenaDTO();
 
             dto.setId(f.getId());
+            dto.setFechaHoraSalidaProgramada(f.getFechaHoraSalidaProgramada());
+            dto.setFechaHoraLlegadaEstimada(f.getFechaHoraLlegadaEstimada());
             dto.setFechaHoraSalida(f.getFechaHoraSalida());
             dto.setFechaHoraLlegada(f.getFechaHoraLlegada());
             dto.setEstado(f.getEstado());
-            dto.setUsuarioId(f.getUsuario().getId());
-            dto.setEmbarcacionId(f.getEmbarcacion().getId());
+            dto.setUsuarioId(f.getUsuario() != null ? f.getUsuario().getId() : null);
+            dto.setEmbarcacionId(f.getEmbarcacion() != null ? f.getEmbarcacion().getId() : null);
 
             faenaResumenDTO.add(dto);
         }
@@ -348,18 +463,46 @@ public class FaenaServiceImpl implements FaenaService {
 
     @Override
     public Double obtenerTiempoPromedioFaena(Long idUsuario, LocalDateTime inicio, LocalDateTime fin) {
-        Double promedio;
-        if (inicio == null && fin == null){
-            promedio = faenaRepository.calcularTiempoPromedioFaenaMinutos(idUsuario);
+        if (idUsuario == null) {
+            throw new BadRequestException("El ID de usuario es obligatorio");
+        }
+        autorizacionFaena.validarAccesoUsuario(idUsuario);
+
+        if (!userRepository.existsById(idUsuario)) {
+            throw new ResourceNotFoundException("Usuario no encontrado");
+        }
+
+        if (inicio == null && fin == null) {
+            Double promedio = faenaRepository.calcularTiempoPromedioFaenaMinutos(idUsuario);
             return promedio != null ? promedio : 0.0;
         }
 
-        if ((inicio == null || fin == null)){
-            throw new BadRequestException("No se puede enviar un solo filtro de fecha. Las opciones son enviar los dos filtros " +
-                    "de fecha o ninguno.");
+        if (inicio == null || fin == null) {
+            throw new BadRequestException(
+                    "Debe enviar ambas fechas o ninguna de ellas");
         }
 
-        promedio = faenaRepository.calcularTiempoPromedioFaenaMinutosEnRangoFecha(idUsuario, inicio, fin);
+        if (inicio.isAfter(fin)) {
+            throw new BadRequestException("La fecha de inicio no puede ser posterior a la fecha de fin");
+        }
+
+        Double promedio = faenaRepository.calcularTiempoPromedioFaenaMinutosEnRangoFecha(
+                idUsuario, inicio, fin);
+
         return promedio != null ? promedio : 0.0;
+    }
+
+    private boolean existeFaenaSolapada(
+            Long usuarioId,
+            Long embarcacionId,
+            LocalDateTime salida,
+            LocalDateTime llegada,
+            Long faenaExcluirId) {
+        return faenaRepository.existeFaenaSolapada(
+                usuarioId,
+                embarcacionId,
+                salida,
+                llegada == null ? FIN_DE_INTERVALO_ABIERTO : llegada,
+                faenaExcluirId);
     }
 }

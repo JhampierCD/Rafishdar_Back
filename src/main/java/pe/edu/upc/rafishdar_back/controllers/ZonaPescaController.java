@@ -5,6 +5,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.rafishdar_back.entities.ZonaPesca;
+import pe.edu.upc.rafishdar_back.dtos.zona_pesca.ZonaPescaDTO;
+import pe.edu.upc.rafishdar_back.dtos.zona_pesca.ZonaPescaRequestDTO;
+import pe.edu.upc.rafishdar_back.dtos.zona_pesca.ZonaPescaUpdateDTO;
 import pe.edu.upc.rafishdar_back.services.ZonaPescaService;
 
 import java.util.List;
@@ -17,11 +20,12 @@ public class ZonaPescaController {
     @Autowired
     ZonaPescaService zonaPescaService;
 
+    // http://localhost:8080/rafishdar/zonas-pesca
     @GetMapping("/zonas-pesca")
-    public ResponseEntity<List<ZonaPesca>> listarZonaPesca() {
+    public ResponseEntity<List<ZonaPescaDTO>> listarZonaPesca() {
 
-        List<ZonaPesca> foundZonasPesca =
-                zonaPescaService.listarZonaPesca();
+        List<ZonaPescaDTO> foundZonasPesca =
+                zonaPescaService.listarZonaPescaDTO();
 
         if (foundZonasPesca.isEmpty()) {
             return new ResponseEntity<>(
@@ -36,6 +40,7 @@ public class ZonaPescaController {
         );
     }
 
+    // http://localhost:8080/rafishdar/zonas-pesca/top3/especie/1?mes=5
     @GetMapping("/zonas-pesca/top3/especie/{especieId}")
     public ResponseEntity<List<ZonaPesca>> listarTop3Historicas(
             @PathVariable Long especieId,
@@ -51,6 +56,7 @@ public class ZonaPescaController {
         return new ResponseEntity<>(zonas, HttpStatus.OK);
     }
 
+    // http://localhost:8080/rafishdar/zonas-pesca/cercanas?distanciaMaxima=10.0
     @GetMapping("/zonas-pesca/cercanas")
     public ResponseEntity<List<ZonaPesca>> listarCercanasACosta(
             @RequestParam Double distanciaMaxima) {
@@ -65,6 +71,7 @@ public class ZonaPescaController {
         return new ResponseEntity<>(zonas, HttpStatus.OK);
     }
 
+    // http://localhost:8080/rafishdar/zonas-pesca/1
     @GetMapping("/zonas-pesca/{id}")
     public ResponseEntity<ZonaPesca> buscarporId(
             @PathVariable("id") Long id) {
@@ -85,19 +92,13 @@ public class ZonaPescaController {
         );
     }
 
+    // http://localhost:8080/rafishdar/zonas-pesca
     @PostMapping("/zonas-pesca")
     public ResponseEntity<ZonaPesca> insertar(
-            @RequestBody ZonaPesca zonaPesca) {
+            @RequestBody ZonaPescaRequestDTO request) {
 
         ZonaPesca newZonaPesca =
-                zonaPescaService.insertar(zonaPesca);
-
-        if (newZonaPesca == null) {
-            return new ResponseEntity<>(
-                    newZonaPesca,
-                    HttpStatus.NOT_ACCEPTABLE
-            );
-        }
+                zonaPescaService.insertar(request);
 
         return new ResponseEntity<>(
                 newZonaPesca,
@@ -105,30 +106,24 @@ public class ZonaPescaController {
         );
     }
 
+    // http://localhost:8080/rafishdar/zonas-pesca/1
     @DeleteMapping("/zonas-pesca/{id}")
-    public ResponseEntity<HttpStatus> eliminar(
+    public ResponseEntity<Boolean> eliminar(
             @PathVariable("id") Long id) {
 
-        if (!zonaPescaService.eliminar(id)) {
-            return new ResponseEntity<>(
-                    HttpStatus.NOT_ACCEPTABLE
-            );
-        }
-
-        return new ResponseEntity<>(
-                HttpStatus.OK
-        );
+        Boolean eliminado = zonaPescaService.eliminar(id);
+        return new ResponseEntity<>(eliminado, HttpStatus.OK);
     }
 
-    @PutMapping("/zonas-pesca")
+    // http://localhost:8080/rafishdar/zonas-pesca
+    @PutMapping("/zonas-pesca/{id}")
     public ResponseEntity<ZonaPesca> actualizar(
-            @RequestBody ZonaPesca zonaPesca) {
-
-        ZonaPesca updatedZona = zonaPescaService.actualizar(zonaPesca);
-        if (updatedZona == null) {
-            return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE);
-        }
-
-        return new ResponseEntity<>(updatedZona, HttpStatus.OK);
+            @PathVariable("id") Long id,
+            @RequestBody ZonaPescaUpdateDTO request) {
+        ZonaPesca zonaPesca = zonaPescaService.actualizar(id, request);
+        return new ResponseEntity<>(
+                zonaPesca,
+                HttpStatus.OK
+        );
     }
 }

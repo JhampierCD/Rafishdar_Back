@@ -1,4 +1,4 @@
-package pe.edu.upc.rafishdar_back.dtos;
+package pe.edu.upc.rafishdar_back.dtos.zona_pesca;
 
 
 import lombok.AllArgsConstructor;
@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ZonaPescaDTO {
+
     private Long id;
     private String nombreZona;
     private Double latitud;

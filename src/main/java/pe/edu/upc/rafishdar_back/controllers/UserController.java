@@ -5,16 +5,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.rafishdar_back.dtos.TokenDTO;
 import pe.edu.upc.rafishdar_back.dtos.user.UserActualizarDTO;
 import pe.edu.upc.rafishdar_back.dtos.user.UserCambioPasswordDTO;
 import pe.edu.upc.rafishdar_back.dtos.user.UserDTO;
 import pe.edu.upc.rafishdar_back.dtos.user.UserRegistroDTO;
-import pe.edu.upc.rafishdar_back.entities.User;
+import pe.edu.upc.rafishdar_back.dtos.user.LoginRequestDTO;
 import pe.edu.upc.rafishdar_back.security.JwtUtilService;
 import pe.edu.upc.rafishdar_back.security.UserSecurity;
-import pe.edu.upc.rafishdar_back.serviceimpl.UserDetailsServiceImpl;
 import pe.edu.upc.rafishdar_back.services.UserService;
 
 import java.util.List;
@@ -29,9 +30,6 @@ public class UserController {
 
     @Autowired
     AuthenticationManager authenticationManager;
-
-    @Autowired
-    UserDetailsServiceImpl userDetailsServiceImpl;
 
     @Autowired
     JwtUtilService jwtUtilService;
@@ -56,6 +54,7 @@ public class UserController {
         );
     }
 
+    // http://localhost:8080/rafishdar/users/buscar?termino=juan
     @GetMapping("/users/buscar")
     public ResponseEntity<List<UserDTO>> buscarPorNombreOApellido(
             @RequestParam("termino") String termino) {
@@ -116,58 +115,47 @@ public class UserController {
     // http://localhost:8080/rafishdar/users/login
     @PostMapping("/users/login")
     public ResponseEntity<TokenDTO> login(
-            @RequestBody User user) {
+            @RequestBody LoginRequestDTO loginRequest) {
+
+        if (loginRequest == null
+                || loginRequest.getEmail() == null
+                || loginRequest.getEmail().isBlank()
+                || loginRequest.getPassword() == null
+                || loginRequest.getPassword().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        String email = loginRequest.getEmail().trim().toLowerCase();
 
         try {
-
-            authenticationManager.authenticate(
+            Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            user.getEmail(),
-                            user.getPassword()
+                            email,
+                            loginRequest.getPassword()
                     )
             );
 
-            UserSecurity securityUser =
-                    (UserSecurity)
-                            userDetailsServiceImpl
-                                    .loadUserByUsername(
-                                            user.getEmail()
-                                    );
+            if (!(authentication.getPrincipal() instanceof UserSecurity securityUser)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
 
-            String token =
-                    jwtUtilService.generateToken(
-                            securityUser
-                    );
+            String token = jwtUtilService.generateToken(securityUser);
+            String authorities = securityUser.getAuthorities()
+                    .stream()
+                    .map(authority -> authority.getAuthority())
+                    .toList()
+                    .toString();
 
-            String authorities =
-                    securityUser
-                            .getAuthorities()
-                            .stream()
-                            .map(
-                                    n -> n.getAuthority()
-                            )
-                            .toList()
-                            .toString();
-
-            TokenDTO tokenDTO =
-                    new TokenDTO(
-                            token,
-                            securityUser
-                                    .getUser()
-                                    .getId(),
-                            authorities
-                    );
-
-            return new ResponseEntity<>(
-                    tokenDTO,
-                    HttpStatus.OK
+            TokenDTO tokenDTO = new TokenDTO(
+                    token,
+                    securityUser.getUser().getId(),
+                    authorities
             );
 
-        } catch (Exception e) {
-
-            return new ResponseEntity<>(
-                    HttpStatus.UNAUTHORIZED
-            );
+            return ResponseEntity.ok(tokenDTO);
+        } catch (AuthenticationException exception) {
+            // Credenciales incorrectas y cuentas desactivadas responden 401.
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 
@@ -193,6 +181,7 @@ public class UserController {
         );
     }
 
+    // http://localhost:8080/rafishdar/users/1
     @DeleteMapping("/users/{id}")
     public ResponseEntity<UserDTO> eliminarLogico(
             @PathVariable("id") Long id) {
@@ -212,6 +201,7 @@ public class UserController {
         );
     }
 
+    // http://localhost:8080/rafishdar/users/1/activar
     @PutMapping("/users/{id}/activar")
     public ResponseEntity<UserDTO> activar(
             @PathVariable("id") Long id) {

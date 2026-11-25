@@ -1,5 +1,6 @@
 package pe.edu.upc.rafishdar_back.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -25,6 +26,7 @@ public class Temporada {
     private LocalDate fechaFin;
     private String descripcion;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "temporada")
     private List<CuotaPesca> cuotasPesca;
 
