@@ -5,6 +5,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.rafishdar_back.entities.Embarcacion;
+import pe.edu.upc.rafishdar_back.dtos.embarcacion.EmbarcacionDTO;
+import pe.edu.upc.rafishdar_back.dtos.embarcacion.EmbarcacionRequestDTO;
+import pe.edu.upc.rafishdar_back.dtos.embarcacion.EmbarcacionUpdateDTO;
 import pe.edu.upc.rafishdar_back.services.EmbarcacionService;
 
 import java.util.List;
@@ -19,10 +22,10 @@ public class EmbarcacionController {
 
     // http://localhost:8080/rafishdar/embarcaciones
     @GetMapping("/embarcaciones")
-    public ResponseEntity<List<Embarcacion>> listarEmbarcacion() {
+    public ResponseEntity<List<EmbarcacionDTO>> listarEmbarcacion() {
 
-        List<Embarcacion> foundEmbarcaciones =
-                embarcacionService.listarEmbarcaciones();
+        List<EmbarcacionDTO> foundEmbarcaciones =
+                embarcacionService.listarEmbarcacionesDTO();
 
         if (foundEmbarcaciones.isEmpty()) {
             return new ResponseEntity<>(
@@ -86,17 +89,10 @@ public class EmbarcacionController {
     // http://localhost:8080/rafishdar/embarcaciones
     @PostMapping("/embarcaciones")
     public ResponseEntity<Embarcacion> insertar(
-            @RequestBody Embarcacion embarcacion) {
+            @RequestBody EmbarcacionRequestDTO request) {
 
         Embarcacion newEmbarcacion =
-                embarcacionService.insertar(embarcacion);
-
-        if (newEmbarcacion == null) {
-            return new ResponseEntity<>(
-                    newEmbarcacion,
-                    HttpStatus.NOT_ACCEPTABLE
-            );
-        }
+                embarcacionService.insertar(request);
 
         return new ResponseEntity<>(
                 newEmbarcacion,
@@ -106,31 +102,19 @@ public class EmbarcacionController {
 
     // http://localhost:8080/rafishdar/embarcaciones/1
     @DeleteMapping("/embarcaciones/{id}")
-    public ResponseEntity<HttpStatus> eliminar(
+    public ResponseEntity<Boolean> eliminar(
             @PathVariable("id") Long id) {
 
-        if (!embarcacionService.eliminar(id)) {
-            return new ResponseEntity<>(
-                    HttpStatus.NOT_ACCEPTABLE
-            );
-        }
-
-        return new ResponseEntity<>(
-                HttpStatus.OK
-        );
+        Boolean eliminado = embarcacionService.eliminar(id);
+        return new ResponseEntity<>(eliminado, HttpStatus.OK);
     }
 
     // http://localhost:8080/rafishdar/embarcaciones
-    @PutMapping("/embarcaciones")
+    @PutMapping("/embarcaciones/{id}")
     public ResponseEntity<Embarcacion> actualizar(
-            @RequestBody Embarcacion embarcacion) {
-
-        if (embarcacionService.actualizar(embarcacion) == null) {
-            return new ResponseEntity<>(
-                    HttpStatus.NOT_ACCEPTABLE
-            );
-        }
-
+            @PathVariable("id") Long id,
+            @RequestBody EmbarcacionUpdateDTO request) {
+        Embarcacion embarcacion = embarcacionService.actualizar(id, request);
         return new ResponseEntity<>(
                 embarcacion,
                 HttpStatus.OK

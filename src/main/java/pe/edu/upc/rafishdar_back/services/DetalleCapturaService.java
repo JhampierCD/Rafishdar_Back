@@ -14,7 +14,7 @@ public interface DetalleCapturaService {
     List<DetalleCapturaDTO> listarCapturasPorBitacora(Long idBitacora);
     DetalleCaptura insertarCaptura(Long idBitacora, DetalleCapturaRequestDTO request);
     DetalleCaptura actualizarCaptura(Long idDetalle, Double nuevoVolumen);
-    void eliminarCaptura(Long idDetalle);
+    Boolean eliminarCaptura(Long idDetalle);
     Boolean validarVolumenMenorACuota(Long idUsuario, Long idEspecie, Double volumenActual, Temporada temporada);
     Double obtenerVolumenTotalPorRango(Long idUsuario, LocalDateTime inicio, LocalDateTime fin);
     Double obtenerVolumenTotalPorEspecieYRango(Long idUsuario, Long idEspecie, LocalDateTime inicio, LocalDateTime fin);

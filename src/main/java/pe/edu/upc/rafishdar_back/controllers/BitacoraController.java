@@ -32,6 +32,16 @@ public class BitacoraController {
         return new ResponseEntity<>(bitacoras, HttpStatus.OK);
     }
 
+    // http://localhost:8080/rafishdar/bitacoras/faena/1
+    @GetMapping("/bitacoras/faena/{idFaena}")
+    public ResponseEntity<List<BitacoraDTO>> listarPorFaena(@PathVariable("idFaena") Long idFaena) {
+        List<BitacoraDTO> bitacoras = bitacoraService.listarBitacorasPorFaena(idFaena);
+        if (bitacoras.isEmpty()) {
+            return new ResponseEntity<>(bitacoras, HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<>(bitacoras, HttpStatus.OK);
+    }
+
     // http://localhost:8080/rafishdar/bitacoras
     @PostMapping("/bitacoras")
     public ResponseEntity<Bitacora> insertar(@RequestBody BitacoraRequestDTO request) {
@@ -53,19 +63,18 @@ public class BitacoraController {
             @RequestBody BitacoraUpdateDTO bitacora) {
 
         Bitacora updatedBitacora =
-                bitacoraService.actualizarBitacora(bitacora);
+                bitacoraService.actualizarBitacora(id, bitacora);
 
         return new ResponseEntity<>(updatedBitacora, HttpStatus.OK);
     }
 
     // http://localhost:8080/rafishdar/bitacoras/1
     @DeleteMapping("/bitacoras/{id}")
-    public ResponseEntity<HttpStatus> eliminar(
+    public ResponseEntity<Boolean> eliminar(
             @PathVariable("id") Long id) {
 
-        bitacoraService.eliminarBitacora(id);
-
-        return new ResponseEntity<>(HttpStatus.OK);
+        Boolean eliminado = bitacoraService.eliminarBitacora(id);
+        return new ResponseEntity<>(eliminado, HttpStatus.OK);
     }
 
     // --- MÉTODOS ANALÍTICOS E INNOVADORES ---

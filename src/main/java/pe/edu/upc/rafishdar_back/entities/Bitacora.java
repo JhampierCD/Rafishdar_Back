@@ -25,6 +25,7 @@ public class Bitacora {
     private LocalDateTime fechaHoraRegistro;
     private String observaciones;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "faena_id")
     private Faena faena;

@@ -12,14 +12,15 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-
 public class RecomendacionIA {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(columnDefinition = "TEXT")
     private String analisisTexto;
+
     private String nivelRiesgo;
     private LocalDateTime fechaGeneracion;
 
@@ -28,4 +29,3 @@ public class RecomendacionIA {
     private Faena faena;
 
 }
-

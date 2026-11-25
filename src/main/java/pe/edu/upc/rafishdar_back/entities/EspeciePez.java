@@ -1,5 +1,6 @@
 package pe.edu.upc.rafishdar_back.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -23,9 +24,11 @@ public class EspeciePez {
     private String nombreCientifico;
     private Boolean estadoVeda;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "especie")
     private List<DetalleCaptura> detallesCaptura;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "especie")
     private List<CuotaPesca> cuotasPesca;
 

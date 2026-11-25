@@ -1,6 +1,9 @@
 package pe.edu.upc.rafishdar_back.services;
 
-import pe.edu.upc.rafishdar_back.dtos.TemporadaDTO;
+import pe.edu.upc.rafishdar_back.dtos.temporada.TemporadaDTO;
+import pe.edu.upc.rafishdar_back.dtos.temporada.TemporadaRequestDTO;
+import pe.edu.upc.rafishdar_back.dtos.temporada.TemporadaUpdateDTO;
+import pe.edu.upc.rafishdar_back.entities.Temporada;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -9,13 +12,13 @@ public interface TemporadaService {
 
     List<TemporadaDTO> listarTodo();
 
-    TemporadaDTO buscarPorId(Long id);
+    Temporada buscarPorId(Long id);
 
-    TemporadaDTO insertar(TemporadaDTO temporadaDTO);
+    Temporada insertar(TemporadaRequestDTO request);
 
-    TemporadaDTO actualizar(TemporadaDTO temporadaDTO);
+    Temporada actualizar(Long id, TemporadaUpdateDTO request);
 
-    boolean eliminar(Long id);
+    Boolean eliminar(Long id);
 
     List<TemporadaDTO> listarVigentes();
 

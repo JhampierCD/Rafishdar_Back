@@ -1,11 +1,8 @@
 package pe.edu.upc.rafishdar_back.dtos.bitacora;
 
 import lombok.Data;
-import pe.edu.upc.rafishdar_back.dtos.CondicionClimaticaDTO;
-import pe.edu.upc.rafishdar_back.dtos.detalle_captura.DetalleCapturaDTO;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 public class BitacoraDTO {

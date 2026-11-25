@@ -3,8 +3,13 @@ package pe.edu.upc.rafishdar_back.serviceimpl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import pe.edu.upc.rafishdar_back.dtos.EspeciePezDTO;
+import pe.edu.upc.rafishdar_back.dtos.especie_pez.EspeciePezDTO;
+import pe.edu.upc.rafishdar_back.dtos.especie_pez.EspeciePezRequestDTO;
+import pe.edu.upc.rafishdar_back.dtos.especie_pez.EspeciePezUpdateDTO;
 import pe.edu.upc.rafishdar_back.entities.EspeciePez;
+import pe.edu.upc.rafishdar_back.exceptions.BadRequestException;
+import pe.edu.upc.rafishdar_back.exceptions.ConflictException;
+import pe.edu.upc.rafishdar_back.exceptions.ResourceNotFoundException;
 import pe.edu.upc.rafishdar_back.repositories.EspeciePezRepository;
 import pe.edu.upc.rafishdar_back.services.EspeciePezService;
 
@@ -28,133 +33,86 @@ public class EspeciePezServiceImpl implements EspeciePezService {
 
 
     @Override
-    public EspeciePezDTO buscarPorId(Long id) {
-
-        EspeciePez especie =
-                especiePezRepository
-                        .findById(id)
-                        .orElse(null);
-
-        if (especie == null) {
-            return null;
+    public EspeciePez buscarPorId(Long id) {
+        if (id == null) {
+            throw new BadRequestException("El ID de especie es obligatorio");
         }
 
-        return convertirDTO(especie);
+        return especiePezRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Especie no encontrada"));
     }
 
 
     @Override
-    public EspeciePezDTO insertar(
-            EspeciePezDTO especiePezDTO) {
+    public EspeciePez insertar(EspeciePezRequestDTO request) {
 
-        if (!datosValidos(especiePezDTO)) {
-            return null;
+        if (!datosValidos(request)) {
+            throw new BadRequestException("Los datos de la especie son obligatorios y deben ser válidos");
         }
+        validarNombreUnico(request, null);
 
         EspeciePez especie = new EspeciePez();
 
         especie.setNombreComun(
-                especiePezDTO.getNombreComun().trim()
+                request.getNombreComun().trim()
         );
 
-        if (especiePezDTO.getNombreCientifico() == null ||
-                especiePezDTO.getNombreCientifico()
-                        .trim()
-                        .isEmpty()) {
-
+        if (request.getNombreCientifico() == null ||
+                request.getNombreCientifico().trim().isEmpty()) {
             especie.setNombreCientifico(null);
-
         } else {
-
-            especie.setNombreCientifico(
-                    especiePezDTO
-                            .getNombreCientifico()
-                            .trim()
-            );
+            especie.setNombreCientifico(request.getNombreCientifico().trim());
         }
 
-        especie.setEstadoVeda(
-                especiePezDTO.getEstadoVeda()
-        );
-
-        EspeciePez nuevaEspecie =
-                especiePezRepository.save(especie);
-
-        return convertirDTO(nuevaEspecie);
+        especie.setEstadoVeda(request.getEstadoVeda());
+        return especiePezRepository.save(especie);
     }
 
 
     @Override
-    public EspeciePezDTO actualizar(
-            EspeciePezDTO especiePezDTO) {
-
-        if (especiePezDTO == null ||
-                especiePezDTO.getId() == null) {
-            return null;
+    public EspeciePez actualizar(Long id, EspeciePezUpdateDTO request) {
+        if (request == null) {
+            throw new BadRequestException("Los datos de actualización de especie son obligatorios");
         }
 
-        if (!datosValidos(especiePezDTO)) {
-            return null;
+        EspeciePez especie = buscarPorId(id);
+        if (request.getNombreComun() == null && request.getNombreCientifico() == null &&
+                request.getEstadoVeda() == null) {
+            throw new BadRequestException("Debe proporcionar al menos un dato para actualizar");
+        }
+        if (request.getNombreComun() != null) {
+            if (request.getNombreComun().isBlank() || request.getNombreComun().trim().length() > 100) {
+                throw new BadRequestException("El nombre común es obligatorio y debe tener máximo 100 caracteres");
+            }
+            especie.setNombreComun(request.getNombreComun().trim());
+        }
+        if (request.getNombreCientifico() != null) {
+            if (request.getNombreCientifico().trim().length() > 150) {
+                throw new BadRequestException("El nombre científico debe tener máximo 150 caracteres");
+            }
+            if (request.getNombreCientifico().isBlank()) {
+                especie.setNombreCientifico(null);
+            } else {
+                especie.setNombreCientifico(request.getNombreCientifico().trim());
+            }
+        }
+        if (request.getEstadoVeda() != null) {
+            especie.setEstadoVeda(request.getEstadoVeda());
         }
 
-        EspeciePez especie =
-                especiePezRepository
-                        .findById(especiePezDTO.getId())
-                        .orElse(null);
-
-        if (especie == null) {
-            return null;
-        }
-
-        especie.setNombreComun(
-                especiePezDTO.getNombreComun().trim()
-        );
-
-        if (especiePezDTO.getNombreCientifico() == null ||
-                especiePezDTO.getNombreCientifico()
-                        .trim()
-                        .isEmpty()) {
-
-            especie.setNombreCientifico(null);
-
-        } else {
-
-            especie.setNombreCientifico(
-                    especiePezDTO
-                            .getNombreCientifico()
-                            .trim()
-            );
-        }
-
-        especie.setEstadoVeda(
-                especiePezDTO.getEstadoVeda()
-        );
-
-        EspeciePez especieActualizada =
-                especiePezRepository.save(especie);
-
-        return convertirDTO(especieActualizada);
+        validarNombreUnico(especie.getNombreComun(), especie.getNombreCientifico(), id);
+        return especiePezRepository.save(especie);
     }
 
-
     @Override
-    public boolean eliminar(Long id) {
-
-        if (id == null ||
-                !especiePezRepository.existsById(id)) {
-            return false;
+    public Boolean eliminar(Long id) {
+        EspeciePez especie = buscarPorId(id);
+        if ((especie.getCuotasPesca() != null && !especie.getCuotasPesca().isEmpty()) ||
+                (especie.getDetallesCaptura() != null && !especie.getDetallesCaptura().isEmpty())) {
+            throw new ConflictException("No se puede eliminar una especie asociada a cuotas o capturas");
         }
-
-        try {
-
-            especiePezRepository.deleteById(id);
-
-            return true;
-
-        } catch (Exception e) {
-
-            return false;
-        }
+        especiePezRepository.delete(especie);
+        return true;
     }
 
 
@@ -185,40 +143,44 @@ public class EspeciePezServiceImpl implements EspeciePezService {
     }
 
 
-    private boolean datosValidos(
-            EspeciePezDTO especiePezDTO) {
-
-        if (especiePezDTO == null) {
+    private boolean datosValidos(EspeciePezRequestDTO request) {
+        if (request == null) {
             return false;
         }
-
-        if (especiePezDTO.getNombreComun() == null ||
-                especiePezDTO.getNombreComun()
-                        .trim()
-                        .isEmpty()) {
+        if (request.getNombreComun() == null ||
+                request.getNombreComun().trim().isEmpty()) {
             return false;
         }
-
-        if (especiePezDTO
-                .getNombreComun()
-                .trim()
-                .length() > 100) {
+        if (request.getNombreComun().trim().length() > 100) {
             return false;
         }
-
-        if (especiePezDTO.getNombreCientifico() != null &&
-                especiePezDTO
-                        .getNombreCientifico()
-                        .trim()
-                        .length() > 150) {
+        if (request.getNombreCientifico() != null &&
+                request.getNombreCientifico().trim().length() > 150) {
             return false;
         }
-
-        if (especiePezDTO.getEstadoVeda() == null) {
+        if (request.getEstadoVeda() == null) {
             return false;
         }
-
         return true;
+    }
+
+    private void validarNombreUnico(EspeciePezRequestDTO dto, Long idExcluir) {
+        String nombreCientifico = dto.getNombreCientifico() == null
+                ? null : dto.getNombreCientifico().trim();
+        validarNombreUnico(dto.getNombreComun().trim(), nombreCientifico, idExcluir);
+    }
+
+    private void validarNombreUnico(String nombreComun, String nombreCientifico, Long idExcluir) {
+        boolean nombreComunDuplicado = idExcluir == null
+                ? especiePezRepository.existsByNombreComunIgnoreCase(nombreComun)
+                : especiePezRepository.existsByNombreComunIgnoreCaseAndIdNot(nombreComun, idExcluir);
+        boolean nombreCientificoDuplicado = nombreCientifico != null && !nombreCientifico.isBlank() &&
+                (idExcluir == null
+                        ? especiePezRepository.existsByNombreCientificoIgnoreCase(nombreCientifico)
+                        : especiePezRepository.existsByNombreCientificoIgnoreCaseAndIdNot(nombreCientifico, idExcluir));
+        if (nombreComunDuplicado || nombreCientificoDuplicado) {
+            throw new ConflictException("Ya existe una especie con ese nombre común o científico");
+        }
     }
 
 

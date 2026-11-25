@@ -3,8 +3,10 @@ package pe.edu.upc.rafishdar_back.serviceimpl;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import pe.edu.upc.rafishdar_back.dtos.GastoOperativoRequestDTO;
+import pe.edu.upc.rafishdar_back.dtos.gasto_operativo.GastoOperativoRequestDTO;
+import pe.edu.upc.rafishdar_back.dtos.gasto_operativo.GastoOperativoUpdateDTO;
 import pe.edu.upc.rafishdar_back.entities.Faena;
+import pe.edu.upc.rafishdar_back.exceptions.BadRequestException;
 import pe.edu.upc.rafishdar_back.entities.GastoOperativo;
 import pe.edu.upc.rafishdar_back.exceptions.ConflictException;
 import pe.edu.upc.rafishdar_back.exceptions.ResourceNotFoundException;
@@ -23,9 +25,10 @@ public class GastoOperativoServiceImpl implements GastoOperativoService {
     private GastoOperativoRepository gastoRepository;
 
     @Autowired
-    private FaenaRepository bitacoraRepository;
+    private FaenaRepository faenaRepository;
+
     @Autowired
-    private FaenaServiceImpl faenaServiceImpl;
+    private FaenaAuthorizationService autorizacionFaena;
 
     // --- MÉTODOS BASE (CRUD) ---
 
@@ -36,15 +39,36 @@ public class GastoOperativoServiceImpl implements GastoOperativoService {
 
     @Override
     public GastoOperativo insertarGasto(Long idFaena, GastoOperativoRequestDTO request) {
-        // Regla 1:1 - Verificamos si la faena ya tiene un gasto registrado
-        if (gastoRepository.findByBitacoraId(idFaena).isPresent()) {
-            throw new ConflictException("Esta bitácora ya tiene gastos registrados. Utilice el método de actualización.");
-        }
+        validarIdFaena(idFaena);
+        validarRequest(request);
+        Faena faena = faenaRepository.findById(idFaena)
+                .orElseThrow(() -> new ResourceNotFoundException("Faena no encontrada"));
+        autorizacionFaena.validarAcceso(faena, true);
 
-        Faena faena = bitacoraRepository.findById(idFaena).orElseThrow(() -> new ResourceNotFoundException("Bitácora no encontrada"));
+        if (gastoRepository.findByFaenaId(idFaena).isPresent()) {
+            throw new ConflictException("Esta faena ya tiene un gasto registrado. Utilice el método de actualización.");
+        }
 
         GastoOperativo gasto = new GastoOperativo();
         gasto.setFaena(faena);
+        if (request.getGalonesCombustible() != null)
+            gasto.setGalonesCombustible(request.getGalonesCombustible());
+        if (request.getCostoCombustible() != null)
+            gasto.setCostoCombustible(request.getCostoCombustible());
+        if (request.getCostoHieloInsumos() != null)
+            gasto.setCostoHieloInsumos(request.getCostoHieloInsumos());
+
+        return gastoRepository.save(gasto);
+    }
+
+    @Override
+    public GastoOperativo actualizarGasto(Long idFaena, GastoOperativoUpdateDTO request) {
+        validarIdFaena(idFaena);
+        validarUpdateRequest(request);
+        GastoOperativo gasto = gastoRepository.findByFaenaId(idFaena)
+                .orElseThrow(() -> new ResourceNotFoundException("No existen gastos registrados para esta faena"));
+        autorizacionFaena.validarAcceso(gasto.getFaena(), true);
+
         gasto.setGalonesCombustible(request.getGalonesCombustible());
         gasto.setCostoCombustible(request.getCostoCombustible());
         gasto.setCostoHieloInsumos(request.getCostoHieloInsumos());
@@ -53,47 +77,45 @@ public class GastoOperativoServiceImpl implements GastoOperativoService {
     }
 
     @Override
-    public GastoOperativo actualizarGasto(Long idBitacora, GastoOperativoRequestDTO request) {
-        GastoOperativo gasto = gastoRepository.findByBitacoraId(idBitacora)
-                .orElseThrow(() -> new ResourceNotFoundException("No existen gastos registrados para esta bitácora"));
-
-        gasto.setGalonesCombustible(request.getGalonesCombustible());
-        gasto.setCostoCombustible(request.getCostoCombustible());
-        gasto.setCostoHieloInsumos(request.getCostoHieloInsumos());
-
-        return gastoRepository.save(gasto);
-    }
-
-    @Override
-    public GastoOperativo buscarGastoPorBitacora(Long idBitacora) {
-        return gastoRepository.findByBitacoraId(idBitacora)
+    public GastoOperativo buscarGastoPorFaena(Long idFaena) {
+        validarIdFaena(idFaena);
+        GastoOperativo gasto = gastoRepository.findByFaenaId(idFaena)
                 .orElseThrow(() -> new ResourceNotFoundException("Gasto operativo no encontrado"));
+        autorizacionFaena.validarAcceso(gasto.getFaena(), false);
+        return gasto;
     }
 
     @Override
-    public void eliminar(Long idFaena) {
-        GastoOperativo gasto = gastoRepository.findByBitacoraId(idFaena)
+    public Boolean eliminar(Long idFaena) {
+        validarIdFaena(idFaena);
+        GastoOperativo gasto = gastoRepository.findByFaenaId(idFaena)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Gasto operativo no encontrado para la bitácora"
+                        "Gasto operativo no encontrado para la faena"
                 ));
-        if ("Finalizada".equals(gasto.getFaena().getEstado())) {
+        autorizacionFaena.validarAcceso(gasto.getFaena(), true);
+        if ("Finalizada".equalsIgnoreCase(gasto.getFaena().getEstado())) {
             throw new ConflictException(
-                    "No se puede eliminar el gasto de una bitácora finalizada"
+                    "No se puede eliminar el gasto de una faena finalizada"
             );
         }
-        gastoRepository.deleteByBitacoraId(idFaena);
+        gastoRepository.delete(gasto);
+        return true;
     }
 
     // --- MÉTODOS ANALÍTICOS ---
 
     @Override
     public Double obtenerTotalGastosPorRango(Long idUsuario, LocalDateTime inicio, LocalDateTime fin) {
+        validarRango(idUsuario, inicio, fin);
+        autorizacionFaena.validarAccesoUsuario(idUsuario);
         Double total = gastoRepository.calcularTotalGastosOperativos(idUsuario, inicio, fin);
         return total != null ? total : 0.0;
     }
 
     @Override
     public Double obtenerPromedioGastosPorRango(Long idUsuario, LocalDateTime inicio, LocalDateTime fin) {
+        validarRango(idUsuario, inicio, fin);
+        autorizacionFaena.validarAccesoUsuario(idUsuario);
         Double promedio = gastoRepository.calcularPromedioGastosPorFaena(idUsuario, inicio, fin);
         return promedio != null ? promedio : 0.0;
     }
@@ -102,8 +124,64 @@ public class GastoOperativoServiceImpl implements GastoOperativoService {
 
     @Override
     public Double obtenerEficienciaCombustiblePorZona(Long idZona, int diasAtras) {
+        if (idZona == null || diasAtras <= 0) {
+            throw new BadRequestException("La zona y los días deben ser válidos");
+        }
+        if (!Double.isFinite(diasAtras)) {
+            throw new BadRequestException("Los días deben ser un número finito");
+        }
         LocalDateTime fechaDesde = LocalDateTime.now().minusDays(diasAtras);
         Double indice = gastoRepository.calcularIndiceKgPorGalonEnZona(idZona, fechaDesde);
         return indice != null ? indice : 0.0;
+    }
+
+    private void validarIdFaena(Long faenaId) {
+        if (faenaId == null) {
+            throw new BadRequestException("El ID de la faena es obligatorio");
+        }
+    }
+
+    private void validarRango(Long usuarioId, LocalDateTime inicio, LocalDateTime fin) {
+        if (usuarioId == null || inicio == null || fin == null || inicio.isAfter(fin)) {
+            throw new BadRequestException("El usuario y un rango de fechas válido son obligatorios");
+        }
+    }
+
+    private void validarRequest(GastoOperativoRequestDTO request) {
+        if (request == null) {
+            throw new BadRequestException("Los datos del gasto operativo son obligatorios");
+        }
+        Double gallons = request.getGalonesCombustible();
+        Double fuelCost = request.getCostoCombustible();
+        Double suppliesCost = request.getCostoHieloInsumos();
+        if (gallons == null || fuelCost == null || suppliesCost == null ||
+                !Double.isFinite(gallons) || !Double.isFinite(fuelCost) ||
+                !Double.isFinite(suppliesCost) || gallons <= 0 ||
+                fuelCost < 0 || suppliesCost < 0) {
+            throw new BadRequestException("Combustible debe ser positivo y los costos no negativos y finitos");
+        }
+    }
+
+    private void validarUpdateRequest(GastoOperativoUpdateDTO request) {
+        if (request == null) {
+            throw new BadRequestException("Los datos del gasto operativo son obligatorios");
+        }
+        if (request.getGalonesCombustible() == null &&
+                request.getCostoCombustible() == null &&
+                request.getCostoHieloInsumos() == null) {
+            throw new BadRequestException("Debe proporcionar al menos un dato para actualizar");
+        }
+        Double gallons = request.getGalonesCombustible();
+        Double fuelCost = request.getCostoCombustible();
+        Double suppliesCost = request.getCostoHieloInsumos();
+        if (gallons != null && (!Double.isFinite(gallons) || gallons <= 0)) {
+            throw new BadRequestException("Los galones de combustible deben ser positivos y finitos");
+        }
+        if (fuelCost != null && (!Double.isFinite(fuelCost) || fuelCost < 0)) {
+            throw new BadRequestException("El costo de combustible no puede ser negativo");
+        }
+        if (suppliesCost != null && (!Double.isFinite(suppliesCost) || suppliesCost < 0)) {
+            throw new BadRequestException("El costo de hielo e insumos no puede ser negativo");
+        }
     }
 }

@@ -2,8 +2,13 @@ package pe.edu.upc.rafishdar_back.serviceimpl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import pe.edu.upc.rafishdar_back.dtos.TemporadaDTO;
+import pe.edu.upc.rafishdar_back.dtos.temporada.TemporadaDTO;
+import pe.edu.upc.rafishdar_back.dtos.temporada.TemporadaRequestDTO;
+import pe.edu.upc.rafishdar_back.dtos.temporada.TemporadaUpdateDTO;
 import pe.edu.upc.rafishdar_back.entities.Temporada;
+import pe.edu.upc.rafishdar_back.exceptions.BadRequestException;
+import pe.edu.upc.rafishdar_back.exceptions.ConflictException;
+import pe.edu.upc.rafishdar_back.exceptions.ResourceNotFoundException;
 import pe.edu.upc.rafishdar_back.repositories.TemporadaRepository;
 import pe.edu.upc.rafishdar_back.services.TemporadaService;
 
@@ -20,137 +25,82 @@ public class TemporadaServiceImpl implements TemporadaService {
     @Override
     public List<TemporadaDTO> listarTodo() {
 
-        List<Temporada> temporadas =
-                temporadaRepository.findAll();
+        List<Temporada> temporadas = temporadaRepository.findAll();
 
         return convertirLista(temporadas);
     }
 
 
     @Override
-    public TemporadaDTO buscarPorId(Long id) {
-
-        Temporada temporada =
-                temporadaRepository
-                        .findById(id)
-                        .orElse(null);
-
-        if (temporada == null) {
-            return null;
+    public Temporada buscarPorId(Long id) {
+        if (id == null) {
+            throw new BadRequestException("El ID de temporada es obligatorio");
         }
 
-        return convertirDTO(temporada);
+        return temporadaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Temporada no encontrada"));
     }
 
 
     @Override
-    public TemporadaDTO insertar(
-            TemporadaDTO temporadaDTO) {
-
-        if (!datosValidos(temporadaDTO)) {
-            return null;
+    public Temporada insertar(TemporadaRequestDTO request) {
+        if (!datosValidos(request)) {
+            throw new BadRequestException("Los datos de la temporada son obligatorios y deben ser válidos");
         }
-
-        if (haySuperposicion(
-                temporadaDTO.getFechaInicio(),
-                temporadaDTO.getFechaFin(),
-                null
-        )) {
-            return null;
+        if (haySuperposicion(request.getFechaInicio(), request.getFechaFin(), null)) {
+            throw new ConflictException("El rango de fechas se superpone con otra temporada");
         }
 
         Temporada temporada = new Temporada();
-
-        temporada.setNombreTemporada(
-                temporadaDTO
-                        .getNombreTemporada()
-                        .trim()
-        );
-
-        temporada.setFechaInicio(
-                temporadaDTO.getFechaInicio()
-        );
-
-        temporada.setFechaFin(
-                temporadaDTO.getFechaFin()
-        );
-
-        Temporada nuevaTemporada =
-                temporadaRepository.save(temporada);
-
-        return convertirDTO(nuevaTemporada);
+        temporada.setNombreTemporada(request.getNombreTemporada().trim());
+        temporada.setFechaInicio(request.getFechaInicio());
+        temporada.setFechaFin(request.getFechaFin());
+        return temporadaRepository.save(temporada);
     }
 
 
     @Override
-    public TemporadaDTO actualizar(
-            TemporadaDTO temporadaDTO) {
-
-        if (temporadaDTO == null ||
-                temporadaDTO.getId() == null) {
-            return null;
+    public Temporada actualizar(Long id, TemporadaUpdateDTO request) {
+        if (request == null) {
+            throw new BadRequestException("Los datos de actualización de temporada son obligatorios");
+        }
+        Temporada temporada = buscarPorId(id);
+        if (request.getNombreTemporada() == null &&
+                request.getFechaInicio() == null &&
+                request.getFechaFin() == null) {
+            throw new BadRequestException("Debe proporcionar al menos un dato para actualizar");
         }
 
-        if (!datosValidos(temporadaDTO)) {
-            return null;
+        if (request.getNombreTemporada() != null) {
+            if (request.getNombreTemporada().isBlank() ||
+                    request.getNombreTemporada().trim().length() > 100) {
+                throw new BadRequestException("El nombre de la temporada es obligatorio y debe tener máximo 100 caracteres");
+            }
+            temporada.setNombreTemporada(request.getNombreTemporada().trim());
         }
 
-        Temporada temporada =
-                temporadaRepository
-                        .findById(temporadaDTO.getId())
-                        .orElse(null);
-
-        if (temporada == null) {
-            return null;
+        LocalDate inicio = request.getFechaInicio() != null ? request.getFechaInicio() : temporada.getFechaInicio();
+        LocalDate fin = request.getFechaFin() != null ? request.getFechaFin() : temporada.getFechaFin();
+        if (inicio.isAfter(fin)) {
+            throw new BadRequestException("La fecha de inicio no puede ser posterior a la fecha fin");
         }
-
-        if (haySuperposicion(
-                temporadaDTO.getFechaInicio(),
-                temporadaDTO.getFechaFin(),
-                temporada.getId()
-        )) {
-            return null;
+        if (haySuperposicion(inicio, fin, temporada.getId())) {
+            throw new ConflictException("El rango de fechas se superpone con otra temporada");
         }
-
-        temporada.setNombreTemporada(
-                temporadaDTO
-                        .getNombreTemporada()
-                        .trim()
-        );
-
-        temporada.setFechaInicio(
-                temporadaDTO.getFechaInicio()
-        );
-
-        temporada.setFechaFin(
-                temporadaDTO.getFechaFin()
-        );
-
-        Temporada temporadaActualizada =
-                temporadaRepository.save(temporada);
-
-        return convertirDTO(temporadaActualizada);
+        temporada.setFechaInicio(inicio);
+        temporada.setFechaFin(fin);
+        return temporadaRepository.save(temporada);
     }
 
 
     @Override
-    public boolean eliminar(Long id) {
-
-        if (id == null ||
-                !temporadaRepository.existsById(id)) {
-            return false;
+    public Boolean eliminar(Long id) {
+        Temporada temporada = buscarPorId(id);
+        if (temporada.getCuotasPesca() != null && !temporada.getCuotasPesca().isEmpty()) {
+            throw new ConflictException("No se puede eliminar una temporada asociada a cuotas de pesca");
         }
-
-        try {
-
-            temporadaRepository.deleteById(id);
-
-            return true;
-
-        } catch (Exception e) {
-
-            return false;
-        }
+        temporadaRepository.delete(temporada);
+        return true;
     }
 
 
@@ -167,7 +117,7 @@ public class TemporadaServiceImpl implements TemporadaService {
     @Override
     public List<TemporadaDTO> buscarSuperpuestas(LocalDate inicio, LocalDate fin) {
         if (inicio == null || fin == null || inicio.isAfter(fin)) {
-            return new ArrayList<>();
+            throw new BadRequestException("El rango de fechas debe ser válido");
         }
 
         return convertirLista(
@@ -176,36 +126,22 @@ public class TemporadaServiceImpl implements TemporadaService {
     }
 
 
-    private boolean datosValidos(
-            TemporadaDTO temporadaDTO) {
-
-        if (temporadaDTO == null) {
+    private boolean datosValidos(TemporadaRequestDTO request) {
+        if (request == null) {
             return false;
         }
-
-        if (temporadaDTO.getNombreTemporada() == null ||
-                temporadaDTO
-                        .getNombreTemporada()
-                        .trim()
-                        .isEmpty()) {
+        if (request.getNombreTemporada() == null ||
+                request.getNombreTemporada().trim().isEmpty()) {
             return false;
         }
-
-        if (temporadaDTO
-                .getNombreTemporada()
-                .trim()
-                .length() > 100) {
+        if (request.getNombreTemporada().trim().length() > 100) {
             return false;
         }
-
-        if (temporadaDTO.getFechaInicio() == null ||
-                temporadaDTO.getFechaFin() == null) {
+        if (request.getFechaInicio() == null ||
+                request.getFechaFin() == null) {
             return false;
         }
-
-        if (temporadaDTO
-                .getFechaInicio()
-                .isAfter(temporadaDTO.getFechaFin())) {
+        if (request.getFechaInicio().isAfter(request.getFechaFin())) {
             return false;
         }
 

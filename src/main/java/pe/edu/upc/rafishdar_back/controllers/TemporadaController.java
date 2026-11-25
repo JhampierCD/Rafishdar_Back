@@ -4,7 +4,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import pe.edu.upc.rafishdar_back.dtos.TemporadaDTO;
+import pe.edu.upc.rafishdar_back.dtos.temporada.TemporadaDTO;
+import pe.edu.upc.rafishdar_back.dtos.temporada.TemporadaRequestDTO;
+import pe.edu.upc.rafishdar_back.dtos.temporada.TemporadaUpdateDTO;
+import pe.edu.upc.rafishdar_back.entities.Temporada;
 import pe.edu.upc.rafishdar_back.services.TemporadaService;
 
 import java.time.LocalDate;
@@ -42,19 +45,11 @@ public class TemporadaController {
 
     // http://localhost:8080/rafishdar/temporadas/1
     @GetMapping("/temporadas/{id}")
-    public ResponseEntity<TemporadaDTO> buscarPorId(
+    public ResponseEntity<Temporada> buscarPorId(
             @PathVariable("id") Long id) {
 
-        TemporadaDTO foundTemporada =
+        Temporada foundTemporada =
                 temporadaService.buscarPorId(id);
-
-        if (foundTemporada == null) {
-            return new ResponseEntity<>(
-                    foundTemporada,
-                    HttpStatus.NOT_FOUND
-            );
-        }
-
         return new ResponseEntity<>(
                 foundTemporada,
                 HttpStatus.OK
@@ -64,17 +59,11 @@ public class TemporadaController {
 
     // http://localhost:8080/rafishdar/temporadas
     @PostMapping("/temporadas")
-    public ResponseEntity<TemporadaDTO> insertar(
-            @RequestBody TemporadaDTO temporadaDTO) {
+    public ResponseEntity<Temporada> insertar(
+            @RequestBody TemporadaRequestDTO request) {
 
-        TemporadaDTO newTemporada =
-                temporadaService.insertar(temporadaDTO);
-
-        if (newTemporada == null) {
-            return new ResponseEntity<>(
-                    HttpStatus.NOT_ACCEPTABLE
-            );
-        }
+        Temporada newTemporada =
+                temporadaService.insertar(request);
 
         return new ResponseEntity<>(
                 newTemporada,
@@ -84,18 +73,13 @@ public class TemporadaController {
 
 
     // http://localhost:8080/rafishdar/temporadas
-    @PutMapping("/temporadas")
-    public ResponseEntity<TemporadaDTO> actualizar(
-            @RequestBody TemporadaDTO temporadaDTO) {
+    @PutMapping("/temporadas/{id}")
+    public ResponseEntity<Temporada> actualizar(
+            @PathVariable("id") Long id,
+            @RequestBody TemporadaUpdateDTO request) {
 
-        TemporadaDTO updatedTemporada =
-                temporadaService.actualizar(temporadaDTO);
-
-        if (updatedTemporada == null) {
-            return new ResponseEntity<>(
-                    HttpStatus.NOT_ACCEPTABLE
-            );
-        }
+        Temporada updatedTemporada =
+                temporadaService.actualizar(id, request);
 
         return new ResponseEntity<>(
                 updatedTemporada,
@@ -106,18 +90,11 @@ public class TemporadaController {
 
     // http://localhost:8080/rafishdar/temporadas/1
     @DeleteMapping("/temporadas/{id}")
-    public ResponseEntity<HttpStatus> eliminar(
+    public ResponseEntity<Boolean> eliminar(
             @PathVariable("id") Long id) {
 
-        if (!temporadaService.eliminar(id)) {
-            return new ResponseEntity<>(
-                    HttpStatus.NOT_ACCEPTABLE
-            );
-        }
-
-        return new ResponseEntity<>(
-                HttpStatus.OK
-        );
+        Boolean eliminado = temporadaService.eliminar(id);
+        return new ResponseEntity<>(eliminado, HttpStatus.OK);
     }
 
 
@@ -141,6 +118,7 @@ public class TemporadaController {
         );
     }
 
+    // http://localhost:8080/rafishdar/temporadas/superpuestas?inicio=2024-01-01&fin=2024-12-31
     @GetMapping("/temporadas/superpuestas")
     public ResponseEntity<List<TemporadaDTO>> buscarSuperpuestas(
             @RequestParam LocalDate inicio,

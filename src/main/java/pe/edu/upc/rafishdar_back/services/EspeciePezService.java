@@ -1,6 +1,9 @@
 package pe.edu.upc.rafishdar_back.services;
 
-import pe.edu.upc.rafishdar_back.dtos.EspeciePezDTO;
+import pe.edu.upc.rafishdar_back.dtos.especie_pez.EspeciePezDTO;
+import pe.edu.upc.rafishdar_back.dtos.especie_pez.EspeciePezRequestDTO;
+import pe.edu.upc.rafishdar_back.dtos.especie_pez.EspeciePezUpdateDTO;
+import pe.edu.upc.rafishdar_back.entities.EspeciePez;
 
 import java.util.List;
 
@@ -8,13 +11,13 @@ public interface EspeciePezService {
 
     List<EspeciePezDTO> listarTodo();
 
-    EspeciePezDTO buscarPorId(Long id);
+    EspeciePez buscarPorId(Long id);
 
-    EspeciePezDTO insertar(EspeciePezDTO especiePezDTO);
+    EspeciePez insertar(EspeciePezRequestDTO request);
 
-    EspeciePezDTO actualizar(EspeciePezDTO especiePezDTO);
+    EspeciePez actualizar(Long id, EspeciePezUpdateDTO request);
 
-    boolean eliminar(Long id);
+    Boolean eliminar(Long id);
 
     List<EspeciePezDTO> listarPorEstadoVeda(Boolean estadoVeda);
 

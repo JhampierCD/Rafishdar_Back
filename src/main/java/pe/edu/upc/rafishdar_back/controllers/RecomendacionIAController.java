@@ -6,6 +6,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pe.edu.upc.rafishdar_back.entities.CondicionClimatica;
 import pe.edu.upc.rafishdar_back.entities.RecomendacionIA;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import pe.edu.upc.rafishdar_back.entities.User;
+import pe.edu.upc.rafishdar_back.repositories.UserRepository;
 import pe.edu.upc.rafishdar_back.services.RecomendacionIAService;
 
 import java.util.List;
@@ -19,7 +23,10 @@ public class RecomendacionIAController {
     @Autowired
     private RecomendacionIAService recomendacionIAService;
 
-    //http://localhost:8080/rafishdar/recomendaciones-ia-lista
+    @Autowired
+    private UserRepository userRepository;
+
+    // http://localhost:8080/rafishdar/recomendaciones-ia
     @GetMapping("/recomendaciones-ia")
     public ResponseEntity<List<RecomendacionIA>> listar() {
 
@@ -39,7 +46,7 @@ public class RecomendacionIAController {
         );
     }
 
-    //http://localhost:8080/rafishdar/recomendaciones-ia-ids
+    // http://localhost:8080/rafishdar/recomendaciones-ia/1
     @GetMapping("/recomendaciones-ia/{id}")
     public ResponseEntity<RecomendacionIA> buscarPorId(
             @PathVariable("id") Long id) {
@@ -60,7 +67,7 @@ public class RecomendacionIAController {
         );
     }
 
-    //http://localhost:8080/rafishdar/recomendaciones-ia-lista
+    // http://localhost:8080/rafishdar/recomendaciones-ia
     @PostMapping("/recomendaciones-ia")
     public ResponseEntity<RecomendacionIA> insertar(
             @RequestBody RecomendacionIA recomendacionIA) {
@@ -82,23 +89,16 @@ public class RecomendacionIAController {
         );
     }
 
-    //http://localhost:8080/rafishdar/recomendaciones-ia-ids
+    // http://localhost:8080/rafishdar/recomendaciones-ia/1
     @DeleteMapping("/recomendaciones-ia/{id}")
-    public ResponseEntity<HttpStatus> eliminar(
+    public ResponseEntity<Boolean> eliminar(
             @PathVariable("id") Long id) {
 
-        if (!recomendacionIAService.eliminarRecomendaciones(id)) {
-            return new ResponseEntity<>(
-                    HttpStatus.NOT_ACCEPTABLE
-            );
-        }
-
-        return new ResponseEntity<>(
-                HttpStatus.OK
-        );
+        Boolean eliminado = recomendacionIAService.eliminarRecomendaciones(id);
+        return new ResponseEntity<>(eliminado, HttpStatus.OK);
     }
 
-    //http://localhost:8080/rafishdar/recomendaciones-ia-ids
+    // http://localhost:8080/rafishdar/recomendaciones-ia
     @PutMapping("/recomendaciones-ia")
     public ResponseEntity<RecomendacionIA> actualizar(
             @RequestBody RecomendacionIA recomendacionIA) {
@@ -118,11 +118,12 @@ public class RecomendacionIAController {
     }
 
     // US-24: generar recomendación por primera vez
-    // POST /rafishdar/recomendaciones-ia/bitacoras/{bitacoraId}?usuarioId=X
-    @PostMapping("/recomendaciones-ia/bitacoras/{bitacoraId}")
+    // http://localhost:8080/rafishdar/recomendaciones-ia/bitacoras/1?usuarioId=1
+    @PostMapping({"/recomendaciones-ia/bitacoras/{bitacoraId}", "/recomendaciones-ia/faenas/{bitacoraId}"})
     public ResponseEntity<?> generar(
             @PathVariable Long bitacoraId,
-            @RequestParam Long usuarioId) {
+            @RequestParam(required = false) Long usuarioId) {
+        Long targetUserId = resolverUsuarioId(usuarioId);
 
         try {
 
@@ -130,7 +131,7 @@ public class RecomendacionIAController {
                     recomendacionIAService
                             .generarParaBitacora(
                                     bitacoraId,
-                                    usuarioId
+                                    targetUserId
                             );
 
             return new ResponseEntity<>(
@@ -139,11 +140,10 @@ public class RecomendacionIAController {
             );
 
         } catch (IllegalStateException e) {
-
-            return new ResponseEntity<>(
-                    e.getMessage(),
-                    HttpStatus.CONFLICT
-            );
+            if (e.getMessage() != null && e.getMessage().contains("Ya existe una recomendación")) {
+                return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
+            }
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE);
 
         } catch (IllegalArgumentException | SecurityException e) {
 
@@ -155,11 +155,12 @@ public class RecomendacionIAController {
     }
 
     // US-26: regenerar recomendación ante cambios en la faena
-    // PUT /rafishdar/recomendaciones-ia/bitacoras/{bitacoraId}?usuarioId=X
-    @PutMapping("/recomendaciones-ia/bitacoras/{bitacoraId}")
+    // http://localhost:8080/rafishdar/recomendaciones-ia/bitacoras/1?usuarioId=1
+    @PutMapping({"/recomendaciones-ia/bitacoras/{bitacoraId}", "/recomendaciones-ia/faenas/{bitacoraId}"})
     public ResponseEntity<?> regenerar(
             @PathVariable Long bitacoraId,
-            @RequestParam Long usuarioId) {
+            @RequestParam(required = false) Long usuarioId) {
+        Long targetUserId = resolverUsuarioId(usuarioId);
 
         try {
 
@@ -167,7 +168,7 @@ public class RecomendacionIAController {
                     recomendacionIAService
                             .regenerarParaBitacora(
                                     bitacoraId,
-                                    usuarioId
+                                    targetUserId
                             );
 
             return new ResponseEntity<>(
@@ -175,6 +176,11 @@ public class RecomendacionIAController {
                     HttpStatus.OK
             );
 
+        } catch (IllegalStateException e) {
+            return new ResponseEntity<>(
+                    e.getMessage(),
+                    HttpStatus.CONFLICT
+            );
         } catch (IllegalArgumentException | SecurityException e) {
 
             return new ResponseEntity<>(
@@ -185,8 +191,8 @@ public class RecomendacionIAController {
     }
 
     // US-25: consultar recomendación de una bitácora validando propietario
-    // GET /rafishdar/recomendaciones-ia/bitacoras/{bitacoraId}?usuarioId=X
-    @GetMapping("/recomendaciones-ia/bitacoras/{bitacoraId}")
+    // http://localhost:8080/rafishdar/recomendaciones-ia/bitacoras/1?usuarioId=1
+    @GetMapping({"/recomendaciones-ia/bitacoras/{bitacoraId}", "/recomendaciones-ia/faenas/{bitacoraId}"})
     public ResponseEntity<?> consultar(
             @PathVariable Long bitacoraId,
             @RequestParam(required = false) Long usuarioId) {
@@ -220,7 +226,7 @@ public class RecomendacionIAController {
     }
 
     // US-33 Técnico: recomendaciones con nivel ALTO recientes
-    // GET /rafishdar/recomendaciones-ia/alto-riesgo?horas=24
+    // http://localhost:8080/rafishdar/recomendaciones-ia/alto-riesgo?horas=24
     @GetMapping("/recomendaciones-ia/alto-riesgo")
     public ResponseEntity<List<RecomendacionIA>> altoRiesgoRecientes(
             @RequestParam(defaultValue = "24") int horas) {
@@ -240,5 +246,14 @@ public class RecomendacionIAController {
                 resultado,
                 HttpStatus.OK
         );
+    }
+
+    private Long resolverUsuarioId(Long usuarioId) {
+        if (usuarioId != null && usuarioId > 0) return usuarioId;
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+            return userRepository.findByEmail(auth.getName()).map(User::getId).orElse(null);
+        }
+        return null;
     }
 }

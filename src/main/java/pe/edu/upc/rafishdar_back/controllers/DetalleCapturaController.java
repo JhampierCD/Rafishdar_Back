@@ -13,6 +13,7 @@ import pe.edu.upc.rafishdar_back.services.DetalleCapturaService;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@CrossOrigin("*")
 @RestController
 @RequestMapping("/rafishdar")
 public class DetalleCapturaController {
@@ -68,12 +69,13 @@ public class DetalleCapturaController {
 
     // http://localhost:8080/rafishdar/detalles-captura/1
     @DeleteMapping("/detalles-captura/{idDetalle}")
-    public ResponseEntity<HttpStatus> eliminar(
+    public ResponseEntity<Boolean> eliminar(
             @PathVariable("idDetalle") Long idDetalle) {
 
-        capturaService.eliminarCaptura(idDetalle);
+        Boolean eliminado = capturaService.eliminarCaptura(idDetalle);
 
         return new ResponseEntity<>(
+                eliminado,
                 HttpStatus.OK
         );
     }

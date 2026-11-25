@@ -1,4 +1,4 @@
-package pe.edu.upc.rafishdar_back.dtos;
+package pe.edu.upc.rafishdar_back.dtos.condicion_climatica;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

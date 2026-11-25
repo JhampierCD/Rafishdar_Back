@@ -109,7 +109,7 @@ public class FaenaController {
     public ResponseEntity<Faena> finalizar(
             @PathVariable("id") Long id,
             @RequestParam String ultimaBitacora,
-            @RequestBody BitacoraRequestDTO request) {
+            @RequestBody(required = false) BitacoraRequestDTO request) {
 
         Faena updatedFaena =
                 faenaService.terminarFaena(id, Boolean.parseBoolean(ultimaBitacora), request);
@@ -119,12 +119,11 @@ public class FaenaController {
 
     // http://localhost:8080/rafishdar/faenas/1
     @DeleteMapping("/faenas/{id}")
-    public ResponseEntity<HttpStatus> eliminar(
+    public ResponseEntity<Boolean> eliminar(
             @PathVariable("id") Long id) {
 
-        faenaService.eliminarFaenaPlanificada(id);
-
-        return new ResponseEntity<>(HttpStatus.OK);
+        Boolean eliminado = faenaService.eliminarFaenaPlanificada(id);
+        return new ResponseEntity<>(eliminado, HttpStatus.OK);
     }
 
     // --- MÉTODOS ANALÍTICOS E INNOVADORES ---
@@ -149,8 +148,8 @@ public class FaenaController {
     @GetMapping("/faenas/usuario/{idUsuario}/tiempo-promedio")
     public ResponseEntity<Double> obtenerTiempoPromedio(
             @PathVariable("idUsuario") Long idUsuario,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fin) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime inicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fin) {
 
         Double promedio =
                 faenaService.obtenerTiempoPromedioFaena(

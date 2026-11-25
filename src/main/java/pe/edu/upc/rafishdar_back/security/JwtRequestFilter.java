@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import io.jsonwebtoken.JwtException;
 
 @Component
 public class JwtRequestFilter
@@ -24,6 +25,14 @@ public class JwtRequestFilter
     @Autowired
     private JwtUtilService jwtUtilService;
 
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+        return "OPTIONS".equalsIgnoreCase(request.getMethod())
+                || "/rafishdar/users/login".equals(path)
+                || "/rafishdar/users/register".equals(path);
+    }
 
     @Override
     protected void doFilterInternal(
@@ -40,53 +49,39 @@ public class JwtRequestFilter
         String username = null;
         String token = null;
 
-        if (authorizationHeader != null &&
-                authorizationHeader
-                        .startsWith("Bearer ")) {
-
-            token =
-                    authorizationHeader.substring(7);
-
-            username =
-                    jwtUtilService
-                            .extractUsername(token);
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            token = authorizationHeader.substring(7).trim();
+            if (!token.isEmpty()) {
+                try {
+                    username = jwtUtilService.extractUsername(token);
+                } catch (JwtException | IllegalArgumentException exception) {
+                    // Token expirado o malformado: continúa como petición no autenticada.
+                    SecurityContextHolder.clearContext();
+                }
+            }
         }
 
-        if (username != null &&
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication() == null) {
+        if (username != null
+                && SecurityContextHolder.getContext().getAuthentication() == null) {
+            try {
+                UserSecurity securityUser = (UserSecurity)
+                        userDetailsService.loadUserByUsername(username);
 
-            UserSecurity securityUser =
-                    (UserSecurity)
-                            this.userDetailsService
-                                    .loadUserByUsername(
-                                            username
-                                    );
-
-            if (jwtUtilService.validateToken(
-                    token,
-                    securityUser)) {
-
-                UsernamePasswordAuthenticationToken
-                        authenticationToken =
-                        new UsernamePasswordAuthenticationToken(
-                                securityUser,
-                                null,
-                                securityUser
-                                        .getAuthorities()
-                        );
-
-                authenticationToken.setDetails(
-                        new WebAuthenticationDetailsSource()
-                                .buildDetails(request)
-                );
-
-                SecurityContextHolder
-                        .getContext()
-                        .setAuthentication(
-                                authenticationToken
-                        );
+                if (securityUser.isEnabled() && jwtUtilService.validateToken(token, securityUser)) {
+                    UsernamePasswordAuthenticationToken authenticationToken =
+                            new UsernamePasswordAuthenticationToken(
+                                    securityUser,
+                                    null,
+                                    securityUser.getAuthorities()
+                            );
+                    authenticationToken.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                }
+            } catch (RuntimeException exception) {
+                // Una cuenta eliminada/desactivada o un JWT inválido no crea una sesión.
+                SecurityContextHolder.clearContext();
             }
         }
 

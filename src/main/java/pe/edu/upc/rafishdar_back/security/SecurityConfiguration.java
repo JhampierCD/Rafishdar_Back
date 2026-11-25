@@ -5,13 +5,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import pe.edu.upc.rafishdar_back.serviceimpl.UserDetailsServiceImpl;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -24,7 +26,9 @@ public class SecurityConfiguration {
             "/swagger-ui/**",
             "/swagger-resources/**",
 
+            "/rafishdar/users/login",
             "/rafishdar/users/login/**",
+            "/rafishdar/users/register",
             "/rafishdar/users/register/**"
     };
 
@@ -41,14 +45,14 @@ public class SecurityConfiguration {
 
 
     @Bean
-    public AuthenticationManager
-    authenticationManager(
-            AuthenticationConfiguration
-                    authenticationConfiguration)
-            throws Exception {
-
-        return authenticationConfiguration
-                .getAuthenticationManager();
+    public AuthenticationManager authenticationManager(
+            UserDetailsServiceImpl userDetailsService,
+            PasswordEncoder passwordEncoder) {
+        // Configuración explícita: autentica contra el repositorio de Rafishdar
+        // y compara contraseñas almacenadas con BCrypt.
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder);
+        return new ProviderManager(provider);
     }
 
 
@@ -75,6 +79,7 @@ public class SecurityConfiguration {
         http.authorizeHttpRequests(
                 authorizationRegistry ->
                         authorizationRegistry
+                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                                 /*
                                  * LOGIN Y REGISTRO
@@ -136,7 +141,8 @@ public class SecurityConfiguration {
                                 )
                                 .hasAnyAuthority(
                                         "ADMIN",
-                                        "PESCADOR"
+                                        "PESCADOR",
+                                        "TECNICO"
                                 )
 
                                 .requestMatchers(
@@ -168,7 +174,8 @@ public class SecurityConfiguration {
                                 )
                                 .hasAnyAuthority(
                                         "ADMIN",
-                                        "PESCADOR"
+                                        "PESCADOR",
+                                        "TECNICO"
                                 )
 
                                 .requestMatchers(
@@ -200,7 +207,8 @@ public class SecurityConfiguration {
                                 )
                                 .hasAnyAuthority(
                                         "ADMIN",
-                                        "PESCADOR"
+                                        "PESCADOR",
+                                        "TECNICO"
                                 )
 
                                 .requestMatchers(
@@ -234,7 +242,8 @@ public class SecurityConfiguration {
                                 )
                                 .hasAnyAuthority(
                                         "ADMIN",
-                                        "PESCADOR"
+                                        "PESCADOR",
+                                        "TECNICO"
                                 )
 
                                 .requestMatchers(
@@ -268,6 +277,19 @@ public class SecurityConfiguration {
                                         "PESCADOR"
                                 )
 
+                                // Lecturas de bitácoras habilitadas para técnico (validación por faena en el servicio).
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/rafishdar/bitacoras/**"
+                                )
+                                .hasAnyAuthority("ADMIN", "PESCADOR", "TECNICO")
+
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/rafishdar/detalles-captura/bitacoras/**"
+                                )
+                                .hasAnyAuthority("ADMIN", "PESCADOR", "TECNICO")
+
                                 .requestMatchers(
                                         "/rafishdar/bitacoras/**",
                                         "/rafishdar/detalles-captura/**"
@@ -284,6 +306,12 @@ public class SecurityConfiguration {
                                         "ADMIN",
                                         "PESCADOR"
                                 )
+
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/rafishdar/gastos-operativos/faenas/*/gasto"
+                                )
+                                .hasAnyAuthority("ADMIN", "PESCADOR", "TECNICO")
 
                                 .requestMatchers(
                                         "/rafishdar/gastos-operativos/**"
@@ -312,6 +340,12 @@ public class SecurityConfiguration {
                                 )
 
                                 .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/rafishdar/bitacoras/*/condicion-climatica"
+                                )
+                                .hasAnyAuthority("ADMIN", "PESCADOR", "TECNICO")
+
+                                .requestMatchers(
                                         "/rafishdar/bitacoras/*/condicion-climatica"
                                 )
                                 .hasAnyAuthority(
@@ -326,7 +360,8 @@ public class SecurityConfiguration {
 
                                 .requestMatchers(
                                         HttpMethod.GET,
-                                        "/rafishdar/recomendaciones/alto-riesgo"
+                                        "/rafishdar/recomendaciones/alto-riesgo",
+                                        "/rafishdar/recomendaciones-ia/alto-riesgo"
                                 )
                                 .hasAnyAuthority(
                                         "ADMIN",
@@ -337,6 +372,21 @@ public class SecurityConfiguration {
                                 /*
                                  * RECOMENDACIONES
                                  */
+
+                                .requestMatchers(
+                                        "/rafishdar/chatbot/**"
+                                )
+                                .hasAnyAuthority(
+                                        "ADMIN",
+                                        "PESCADOR",
+                                        "TECNICO"
+                                )
+
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/rafishdar/recomendaciones-ia/faenas/*"
+                                )
+                                .hasAnyAuthority("ADMIN", "PESCADOR", "TECNICO")
 
                                 .requestMatchers(
                                         "/rafishdar/recomendaciones-ia/**"

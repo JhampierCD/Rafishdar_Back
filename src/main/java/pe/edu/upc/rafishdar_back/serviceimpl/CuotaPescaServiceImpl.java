@@ -1,14 +1,17 @@
 package pe.edu.upc.rafishdar_back.serviceimpl;
 
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pe.edu.upc.rafishdar_back.dtos.cuota_pesca.CuotaPescaDTO;
-import pe.edu.upc.rafishdar_back.dtos.EspeciePezDTO;
-import pe.edu.upc.rafishdar_back.dtos.cuota_pesca.CuotaPescaReqUpdDTO;
+import pe.edu.upc.rafishdar_back.dtos.especie_pez.EspeciePezDTO;
+import pe.edu.upc.rafishdar_back.dtos.cuota_pesca.CuotaPescaRequestDTO;
+import pe.edu.upc.rafishdar_back.dtos.cuota_pesca.CuotaPescaUpdateDTO;
 import pe.edu.upc.rafishdar_back.entities.CuotaPesca;
 import pe.edu.upc.rafishdar_back.entities.EspeciePez;
 import pe.edu.upc.rafishdar_back.entities.Temporada;
+import pe.edu.upc.rafishdar_back.exceptions.BadRequestException;
+import pe.edu.upc.rafishdar_back.exceptions.ConflictException;
+import pe.edu.upc.rafishdar_back.exceptions.ResourceNotFoundException;
 import pe.edu.upc.rafishdar_back.repositories.CuotaPescaRepository;
 import pe.edu.upc.rafishdar_back.repositories.EspeciePezRepository;
 import pe.edu.upc.rafishdar_back.repositories.TemporadaRepository;
@@ -39,6 +42,13 @@ public class CuotaPescaServiceImpl implements CuotaPescaService {
     }
 
     @Override
+    public CuotaPesca buscarPorId(Long id) {
+        if (id == null) throw new BadRequestException("El ID de la cuota es obligatorio");
+        return cuotaPescaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cuota de pesca no encontrada"));
+    }
+
+    @Override
     public CuotaPescaDTO buscarPorIdDTO(Long id) {
 
         CuotaPesca cuota = cuotaPescaRepository.findById(id).orElse(null);
@@ -52,175 +62,72 @@ public class CuotaPescaServiceImpl implements CuotaPescaService {
 
 
     @Override
-    public CuotaPesca insertar(CuotaPescaReqUpdDTO requestDTO) {
+    public CuotaPesca insertarCuota(CuotaPescaRequestDTO requestDTO) {
 
         if (!datosValidos(requestDTO)) {
-            return null;
+            throw new BadRequestException("Los datos de la cuota de pesca son obligatorios y deben ser válidos");
         }
 
-        EspeciePez especie =
-                especiePezRepository
-                        .findById(
-                                requestDTO.getEspecieId()
-                        )
-                        .orElse(null);
+        EspeciePez especie = especiePezRepository.findById(requestDTO.getEspecieId())
+                .orElseThrow(() -> new ResourceNotFoundException("Especie no encontrada"));
 
-        if (especie == null) {
-            return null;
-        }
+        Temporada temporada = temporadaRepository.findById(requestDTO.getTemporadaId())
+                .orElseThrow(() -> new ResourceNotFoundException("Temporada no encontrada"));
 
-        Temporada temporada =
-                temporadaRepository
-                        .findById(
-                                requestDTO.getTemporadaId()
-                        )
-                        .orElse(null);
-
-        if (temporada == null) {
-            return null;
-        }
-
-        CuotaPesca cuotaExistente =
-                cuotaPescaRepository
-                        .findByEspecieIdAndTemporadaId(
-                                requestDTO.getEspecieId(),
-                                requestDTO.getTemporadaId()
-                        )
-                        .orElse(null);
-
-        if (cuotaExistente != null) {
-            return null;
+        if (cuotaPescaRepository.findByEspecieIdAndTemporadaId(
+                requestDTO.getEspecieId(), requestDTO.getTemporadaId()).isPresent()) {
+            throw new ConflictException("Ya existe una cuota de pesca para esta especie y temporada");
         }
 
         CuotaPesca cuota = new CuotaPesca();
 
-        cuota.setLimiteToneladasIndustrial(
-                requestDTO
-                        .getLimiteToneladasIndustrial()
-        );
-
+        cuota.setLimiteToneladasIndustrial(requestDTO.getLimiteToneladasIndustrial());
         cuota.setEspecie(especie);
         cuota.setTemporada(temporada);
 
-        CuotaPesca nuevaCuota =
-                cuotaPescaRepository.save(cuota);
-
-        return convertirDTO(nuevaCuota);
+        return cuotaPescaRepository.save(cuota);
     }
 
 
     @Override
-    public CuotaPescaDTO actualizar(CuotaPescaReqUpdDTO requestDTO) {
-        CuotaPesca foundCuota = cuotaPescaRepository.findById(requestDTO.getId()).orElse(null);
-        if (requestDTO == null ||
-                requestDTO.getId() == null) {
-            return null;
+    public CuotaPesca actualizarCuota(Long idCuota, CuotaPescaUpdateDTO request) {
+        if (request == null) {
+            throw new BadRequestException("Los datos de actualización de la cuota son obligatorios");
+        }
+        CuotaPesca foundCuota = buscarPorId(idCuota);
+
+        Double limiteToneladasIndustrial = request.getLimiteToneladasIndustrial();
+        if (limiteToneladasIndustrial == null || !Double.isFinite(limiteToneladasIndustrial) ||
+                limiteToneladasIndustrial < 0) {
+            throw new BadRequestException("El límite de toneladas industrial debe ser finito y no negativo");
         }
 
-        if (!datosValidos(requestDTO)) {
-            return null;
-        }
+        foundCuota.setLimiteToneladasIndustrial(limiteToneladasIndustrial);
 
-        CuotaPesca cuota =
-                cuotaPescaRepository
-                        .findById(requestDTO.getId())
-                        .orElse(null);
-
-        if (cuota == null) {
-            return null;
-        }
-
-        EspeciePez especie =
-                especiePezRepository
-                        .findById(
-                                requestDTO.getEspecieId()
-                        )
-                        .orElse(null);
-
-        if (especie == null) {
-            return null;
-        }
-
-        Temporada temporada =
-                temporadaRepository
-                        .findById(
-                                requestDTO.getTemporadaId()
-                        )
-                        .orElse(null);
-
-        if (temporada == null) {
-            return null;
-        }
-
-        CuotaPesca cuotaRepetida =
-                cuotaPescaRepository
-                        .findByEspecieIdAndTemporadaId(
-                                requestDTO.getEspecieId(),
-                                requestDTO.getTemporadaId()
-                        )
-                        .orElse(null);
-
-        if (cuotaRepetida != null &&
-                !cuotaRepetida
-                        .getId()
-                        .equals(requestDTO.getId())) {
-
-            return null;
-        }
-
-        cuota.setLimiteToneladasIndustrial(
-                requestDTO
-                        .getLimiteToneladasIndustrial()
-        );
-
-        cuota.setEspecie(especie);
-        cuota.setTemporada(temporada);
-
-        CuotaPesca cuotaActualizada =
-                cuotaPescaRepository.save(cuota);
-
-        return convertirDTO(cuotaActualizada);
+        return cuotaPescaRepository.save(foundCuota);
     }
 
 
     @Override
-    public boolean eliminar(Long id) {
-
-        if (id == null ||
-                !cuotaPescaRepository.existsById(id)) {
-            return false;
+    public Boolean eliminarCuota(Long id) {
+        if (id == null) {
+            throw new BadRequestException("El ID de la cuota es obligatorio");
         }
-
-        try {
-
-            cuotaPescaRepository.deleteById(id);
-
-            return true;
-
-        } catch (Exception e) {
-
-            return false;
-        }
+        CuotaPesca cuota = cuotaPescaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cuota de pesca no encontrada"));
+        cuotaPescaRepository.delete(cuota);
+        return true;
     }
 
 
     @Override
-    public CuotaPescaDTO buscarPorEspecieYTemporada(
-            Long especieId,
-            Long temporadaId) {
-
-        if (especieId == null ||
-                temporadaId == null) {
+    public CuotaPescaDTO buscarPorEspecieYTemporada(Long especieId, Long temporadaId) {
+        if (especieId == null || temporadaId == null) {
             return null;
         }
 
-        CuotaPesca cuota =
-                cuotaPescaRepository
-                        .findByEspecieIdAndTemporadaId(
-                                especieId,
-                                temporadaId
-                        )
-                        .orElse(null);
+        CuotaPesca cuota = cuotaPescaRepository.findByEspecieIdAndTemporadaId(especieId, temporadaId)
+                .orElse(null);
 
         if (cuota == null) {
             return null;
@@ -285,7 +192,7 @@ public class CuotaPescaServiceImpl implements CuotaPescaService {
     }
 
     private boolean datosValidos(
-            CuotaPescaReqUpdDTO cuotaPescaDTO) {
+            CuotaPescaRequestDTO cuotaPescaDTO) {
 
         if (cuotaPescaDTO == null) {
             return false;
@@ -301,8 +208,8 @@ public class CuotaPescaServiceImpl implements CuotaPescaService {
             return false;
         }
 
-        if (cuotaPescaDTO
-                .getLimiteToneladasIndustrial() < 0) {
+        if (!Double.isFinite(cuotaPescaDTO.getLimiteToneladasIndustrial()) ||
+                cuotaPescaDTO.getLimiteToneladasIndustrial() < 0) {
             return false;
         }
 
